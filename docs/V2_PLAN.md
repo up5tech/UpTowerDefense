@@ -11,13 +11,21 @@ bump. The toolchain re-verification is one small phase inside it (V2-0), because
 a store update is also the moment we are forced to re-check Flutter, Flame and
 platform requirements.
 
-**Status.** The plan is proposed; no v2 phase is complete. Work landed ahead of
-V2-3: all ten campaign levels now declare objectives, and the decoder, content
-gate and `CONTENT_AUTHORING.md` cover their format and authoring constraints.
-Objective evaluation, stars, HUD/results and save v4 remain unimplemented.
-Planned scope decisions are recorded in [`GAME_DESIGN.md`](GAME_DESIGN.md) §14
-(D63–D70); implementation-specific decisions still to be logged are listed in
-§8 below.
+**Status (2026-10-29).** V2-0 is in progress; its automated code, toolchain and
+host-side baseline work are complete, but its device-QA exit gate is not signed
+off. Haptics were wired in Phase 13 (D71), and the local SDK is now Flutter
+3.47.8 / Dart 3.13.7. The latter is a required security update for Android,
+Windows and Linux Flutter apps, not an optional future bump. No physical device
+is currently available to this workspace, so the manual offline/interruption/
+haptics and graphics/memory profile remains outstanding; do not start V2-1
+until that gate is recorded or explicitly narrowed here with evidence.
+
+Work landed ahead of V2-3: all ten campaign levels now declare objectives, and
+the decoder, content gate and `CONTENT_AUTHORING.md` cover their format and
+authoring constraints. Objective evaluation, stars, HUD/results and save v4
+remain unimplemented. Planned scope decisions are recorded in
+[`GAME_DESIGN.md`](GAME_DESIGN.md) §14 (D63–D71); implementation-specific
+decisions still to be logged are listed in §8 below.
 
 ---
 
@@ -41,9 +49,8 @@ Read from the shipped code and content, not from older phase notes.
 
 **Known gaps 1.0 carries into v2, and must close in it:**
 
-1. The haptics switch is persisted and shown but drives nothing.
-2. Phase 12's manual device pass is not signed off.
-3. Phase 13 still needs signed store uploads and the iOS archive path.
+1. Phase 12's manual device pass is not signed off.
+2. Phase 13 still needs signed store uploads and a distributable iOS archive/TestFlight path.
 
 ---
 
@@ -72,7 +79,7 @@ editor, procedural campaign maps, 3D, and any remote configuration.
 | B. Roster | Tower 4 and 5; enemies 5 and 6 | Each answers a gap the current roster has, and each is measured against a control (D55–D60 method) |
 | C. Modes | Objectives, difficulty, daily challenge | Turns the same levels into more than one evening's play |
 | D. Meta | Local achievements, progress screen | Gives long-tail goals without a currency (D39 stays intact) |
-| E. Foundation | Haptics wiring, toolchain re-verification, save v4/v5, QA | Closes 1.0's gaps and pays down the risk of a second major release |
+| E. Foundation | Haptics wiring (done), toolchain re-verification, save v4/v5, QA | Closes 1.0's gaps and pays down the risk of a second major release |
 
 ---
 
@@ -113,21 +120,34 @@ toolchain.
 
 Tasks:
 
-- Wire the haptics switch through a two-method sink, the same shape as the SFX
-  sink (D47): gameplay cues ask the sink, the sink decides, tests never touch a
-  platform channel. Cues limited to build, upgrade, sell, leak, victory, defeat.
-- Re-verify Flutter/Dart/Flame against current stable and record the versions in
-  README and AGENTS.md. Bump only with a green suite and a device run.
-- Re-run the performance baseline (both stress tests) on the release build and
-  write the numbers into the QA doc, so v2's content has a before picture.
-- Sign off Phase 12's manual device pass or shrink it to what still applies.
+- [x] Wire the haptics setting through an injectable sink. The shipped cue set
+  is build, upgrade and core leak only (D71); tests exercise the mapping without
+  depending on platform vibration. This landed in Phase 13.
+- [x] Verify Flutter/Dart/Flame against stable, update Flutter to the security-
+  patched stable and record the versions in README and AGENTS.md. Flutter
+  3.47.8 / Dart 3.13.7 is required for Android, Windows and Linux Flutter apps
+  following the eMudhra certificate compromise; see the
+  [Firebase remediation guidance](https://firebase.google.com/support/guides/compromised-emudhra-intermediate-ca).
+  Flame 1.38.2 remains the latest stable package on pub.dev.
+- [x] Re-run the normal campaign and stress simulation/effects baselines and
+  record the host-side measurements in the QA doc. These are not device frame
+  times or a substitute for release-mode GPU profiling.
+- [ ] Complete and record the applicable Phase 12 device scenarios (offline
+  play, interruption/resume, haptics, repeated navigation, and frame/memory
+  profile), or document an evidence-based reduction before the V2-0 exit review.
 
-Acceptance criteria:
+Acceptance criteria and current evidence:
 
-- Toggling haptics off produces no platform call; toggling on produces one per
-  configured cue. A unit test asserts the cue mapping, not the vibration.
-- No platform permission or new `Info.plist` usage key was added.
-- The baseline table exists and covers a stress level plus a normal level.
+- [x] Toggling haptics off remains silent; enabled mapped events request the
+  configured feedback. Unit tests pin the cue mapping and tolerate an absent
+  platform service.
+- [x] No platform permission or new `Info.plist` usage key was added (the
+  release permission guard remains in the suite).
+- [x] The QA baseline table covers a normal campaign level, crowded simulation,
+  and real-stream plus saturated effects.
+- [ ] Device-only Phase 12 checks are run and signed off, or their remaining
+  scope is explicitly narrowed with evidence. Until then V2-0 is not complete
+  and V2-1 remains gated.
 
 ### V2-1 — Region 3: the third act (M)
 
@@ -418,7 +438,7 @@ Nothing in v2 is accepted on reasoning alone; the 1.0 balance work set the bar.
 | A support tower cannot earn its slot | Fails the "useful situation" bar | Structural fixes measured first (D56/D60 method); ship fewer towers rather than a dead one |
 | Chain/aura break deterministic combat | Replays and tests disagree; single-resolution rule broken | Deterministic tie-breaking, one damage application per victim, explicit tests |
 | Save bumps lose progress | Trust damage worse than a missing feature | Additive fields, defaults, every version pair tested, device upgrade run |
-| Toolchain bump breaks pinned Flame APIs | Mid-phase rework | Isolated in V2-0, with the suite and a device run as the gate |
+| Toolchain bump breaks pinned Flame APIs | Mid-phase rework | V2-0 keeps Flame 1.38.2 pinned; the Flutter 3.47.8/Dart 3.13.7 security update is verified with the project suite, while device QA remains an explicit phase exit gate |
 | New art lacks provenance | Cannot ship | Attribution recorded before the asset lands, per AGENTS.md §5 |
 | Daily challenge reads a clock in the wrong layer | Untestable, non-deterministic runs | Date is read in presentation and passed as a seed; domain stays clock-free |
 

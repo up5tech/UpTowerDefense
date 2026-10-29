@@ -5,13 +5,29 @@ Repeatable manual QA scenarios for the Phase 12 acceptance criteria in
 expected result and the acceptance criterion it covers, so any run produces the
 same evidence twice.
 
-Automated coverage is *not* repeated here: `flutter test` (449 tests),
-`flutter analyze`, `dart format`, `tool/validate_content.dart`, the two stress
-tests (`stress_frame_cost_test` for the simulation half, `stress_fx_cost_test`
-for the effects half) and `restart_navigation_leak_test` are the scripted half
-of Phase 12 and are run first. This document covers what only a real device can
-show; where a scenario's core rule is already pinned by a test, the manual step
-shrinks to a spot-check of the same behaviour on real hardware.
+Automated coverage is *not* repeated here: `flutter test`, `flutter analyze`,
+`dart format`, `tool/validate_content.dart`, the two stress tests
+(`stress_frame_cost_test` for simulation, `stress_fx_cost_test` for effects) and
+`restart_navigation_leak_test` are the scripted half of Phase 12. This document
+covers what only a real device can show; where a scenario's core rule is already
+pinned by a test, the manual step shrinks to a spot-check of the same behaviour
+on real hardware.
+
+**V2-0 baseline run (2026-10-29):** Flutter 3.47.8 / Dart 3.13.7, Flame
+1.38.2, macOS arm64 test host. These are harness wall-clock timings, not
+release-mode device frame times; the device-only graphics and memory profile
+below is still outstanding.
+
+| Scenario | Configuration | Average | p95 | Worst | Result |
+|---|---|---:|---:|---:|---|
+| Normal simulation | `meadow_03`, six Ranger plan, to victory; 4,646 frames | 0.002 ms | 0.003 ms | 0.674 ms | Pass; host harness only |
+| Crowded simulation | 3,000 measured frames after warm-up; 23/23 towers, peak 5,077 enemies, 10,263 pending spawns | 0.179 ms | 0.398 ms | 2.518 ms | Pass; 4 ms average budget |
+| Effects, real stress stream | 3,000 frames; peak 64 effects, 232 events/frame, 8,498 events total | 43.6 µs | 87.0 µs | 1,001 µs | Pass; 1 ms average budget |
+| Effects, saturated | 1,500 frames at 64-effect cap | 46.0 µs | 64.0 µs | 209 µs | Pass; 1.5 ms average budget |
+
+The numbers are representative of this local harness run only; compare like
+hosts/build modes when trending them. Do not infer GPU/rasterization or physical
+device battery/memory behaviour from these tests.
 
 ## 1. How to run this pass
 
@@ -109,23 +125,24 @@ real memory and real audio exist.
 Scripted half — both run and print their distribution before this section is
 touched by hand:
 
-- `flutter test test/unit/stress_frame_cost_test.dart` — the simulation half.
-  Pinned at last run (2026-10): **avg 0.170ms, p95 0.374ms, worst 2.277ms**
-  per `advance` on a 5 000-enemy field (23 towers maxed, 10 263 queued spawns),
-  against a 4ms budget. The splash broad-phase and cached segment walk already
-  landed behind these numbers.
-- `flutter test test/unit/stress_fx_cost_test.dart` — the effects half:
-  publish+update+render recording at **avg 48µs** under the wave's real event
-  stream and **avg 51µs** with the layer saturated at its 64-cue cap, against a
-  1ms budget.
+- `flutter test test/unit/stress_frame_cost_test.dart` — simulation, measured
+  2026-10-29 on the local host: **avg 0.179ms, p95 0.398ms, worst 2.518ms**
+  per `advance` on a peak 5,077-enemy field (23 towers, 10,263 queued spawns),
+  against a 4ms average budget. The same run also measures the normal `meadow_03`
+  simulation baseline above.
+- `flutter test test/unit/stress_fx_cost_test.dart` — effects, measured
+  2026-10-29 on the local host: publish+update+render recording at **avg 43.6µs,
+  p95 87µs, worst 1,001µs** under the wave's real event stream and **avg 46µs,
+  p95 64µs, worst 209µs** at the saturated 64-cue cap, against 1ms and 1.5ms
+  average budgets respectively.
 
 On-device half (point the profiler at the same shape of load):
 
 | # | Steps | Expected |
 |---|---|---|
-| S1 | Build out a late level (every pad built, all maxed) and let a dense late wave run 60 s with the device profiler open. | Sustained frame rate meets the target on the low-end device; simulation (~0.17ms) plus effects recording (~0.05ms) are known and small, so a shortfall here points at rasterisation and sprite/particle draw — record where the time goes. The known remaining simulation hotspot is the per-tower targeting scan (23 × full enemy list per ready volley); if the device profile agrees, note it in Known Issues rather than assuming rendering. |
+| S1 | Build out a late level (every pad built, all maxed) and let a dense late wave run 60 s with the device profiler open. | Sustained frame rate meets the target on the low-end device; host-harness simulation (~0.18ms) plus effects recording (~0.04ms) are known and small, so a shortfall here points at rasterisation and sprite/particle draw — record where the time goes. The known remaining simulation hotspot is the per-tower targeting scan (23 × full enemy list per ready volley); if the device profile agrees, note it in Known Issues rather than assuming rendering. |
 | S2 | Same run, watch memory over 60 s. | No unbounded growth: event queues drain every frame and components are reused, so the graph is flat, not climbing. |
-| S3 | Repeat S1 at 2× game speed. | Frame pacing holds; effects scale with the same time source as the simulation. |
+| S3 | Repeat S1 at 2× game speed. | Frame pacing holds; effects scale with the same time source as the simulation. The host-side timings above are not a substitute for this device frame-pacing check. |
 
 ## 9. Known issues
 

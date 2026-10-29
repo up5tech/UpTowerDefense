@@ -1,6 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:up_tower_defense/features/gameplay/data/content_catalog.dart';
+import 'package:up_tower_defense/features/gameplay/data/enemy_repository.dart';
+import 'package:up_tower_defense/features/gameplay/data/level_repository.dart';
+import 'package:up_tower_defense/features/gameplay/data/map_repository.dart';
+import 'package:up_tower_defense/features/gameplay/data/tower_repository.dart';
 import 'package:up_tower_defense/features/gameplay/domain/level_event.dart';
 import 'package:up_tower_defense/features/gameplay/domain/level_session.dart';
 
@@ -61,6 +66,82 @@ const int _minPeakProjectiles = 8;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('a normal campaign level records a simulation baseline', () async {
+    final repository = LevelRepository(
+      mapRepository: MapRepository(),
+      enemyRepository: EnemyRepository(),
+      towerRepository: TowerRepository(),
+    );
+    final bundle = await repository.load(
+      ContentCatalog.levelAssetFor('meadow_03'),
+    );
+    final session = LevelSession(
+      level: bundle.level,
+      map: bundle.map,
+      enemyCatalog: bundle.enemies,
+      towerCatalog: bundle.towers,
+    );
+    const plan = [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'ranger'),
+    ];
+    final samples = <int>[];
+    final watch = Stopwatch();
+    var frameCount = 0;
+
+    while (session.elapsed < 900 &&
+        session.phase != LevelPhase.victory &&
+        session.phase != LevelPhase.defeat) {
+      if (session.towerCount < plan.length) {
+        final (padId, towerId) = plan[session.towerCount];
+        final definition = bundle.towers[towerId];
+        if (definition != null && session.canBuildOn(padId, definition)) {
+          session.buildTower(padId, definition);
+        }
+      } else {
+        for (final (padId, _) in plan) {
+          if (session.canUpgradeAt(padId)) {
+            session.upgradeTowerAt(padId);
+            break;
+          }
+        }
+      }
+      if (session.canStartNextWave) {
+        session.startNextWave();
+      }
+
+      watch
+        ..reset()
+        ..start();
+      session.advance(stressFrameDt);
+      watch.stop();
+      samples.add(watch.elapsedMicroseconds);
+      session.drainEvents();
+      frameCount++;
+    }
+
+    final sorted = [...samples]..sort();
+    final average =
+        samples.fold<int>(0, (sum, value) => sum + value) / samples.length;
+    final p95 = sorted[(sorted.length * 0.95).floor()];
+    final worst = sorted.last;
+
+    // ignore: avoid_print
+    print(
+      'normal simulation baseline (${bundle.level.id}, ${session.phase.name}): '
+      '$frameCount frames, avg ${(average / 1000).toStringAsFixed(3)}ms, '
+      'p95 ${(p95 / 1000).toStringAsFixed(3)}ms, '
+      'worst ${(worst / 1000).toStringAsFixed(3)}ms',
+    );
+
+    expect(session.phase, LevelPhase.victory);
+    expect(frameCount, greaterThan(0));
+  }, timeout: const Timeout(Duration(minutes: 3)));
 
   test('a crowded late-game frame stays inside the simulation budget', () async {
     final session = await startStressSession();

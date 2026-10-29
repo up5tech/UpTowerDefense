@@ -27,11 +27,15 @@ key; verify with `apksigner verify --print-certs` before uploading.
 
 **Current V1 gate status (2026-10-29): NOT SIGNED OFF.** The local full Flutter
 test suite, analysis, formatting and content validator pass; Android release
-APK and iOS Simulator builds are available. The APK on this machine is debug-
+APK and iOS Simulator builds are available. The local Flutter SDK was updated
+to 3.47.8 / Dart 3.13.7 to include the published Flutter/Dart TLS certificate
+remediation, and `pubspec.yaml` now requires Dart 3.13.7 or later. The local
+release APK and iOS Simulator app build successfully, but the APK is debug-
 signed because `android/key.properties` is absent. The Android App Bundle build
-currently fails in native-library symbol stripping, and `flutter doctor`
-reports missing Android command-line tools and unaccepted/unknown Android
-licences. An iPhone 17 Simulator launch smoke check passed, but no physical
+still fails in native-library symbol stripping; `flutter doctor` reports missing
+Android command-line tools and unaccepted/unknown Android licences. The security
+SDK update is therefore verified in local builds but has not been delivered as
+a signed store binary. An iPhone 17 Simulator launch smoke check passed, but no physical
 Android/iOS QA, airplane-mode gameplay pass, upgrade-over-previous-release
 check, Android release certificate, signed iOS archive/TestFlight export or
 store account upload has been verified. An unsigned `.xcarchive` exists, but is

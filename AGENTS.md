@@ -9,11 +9,11 @@ with the code, the code is wrong — fix it, or fix this file in the same change
 
 | | |
 |---|---|
-| Stack | Flutter 3.47.7 · Dart 3.13.5 · Flame 1.38.2 |
+| Stack | Flutter 3.47.8 · Dart 3.13.7 · Flame 1.38.2 |
 | Shell | Riverpod 3.4.3 · go_router 18.1.1 · shared_preferences 2.5.6 |
 | App ID | `com.uptowerdefense.game` |
 | Orientation | Landscape gameplay; menus adapt to portrait and landscape |
-| Phase status | **Phases 0–11 complete; Phase 12 automated half done; Phase 13 (release prep) in progress** — Phase 12 added the QA scenario doc, restart/navigation leak tests, paired stress frame-cost tests (simulation + effects) and a splash broad-phase optimization; its manual device pass is still outstanding. Phase 13 so far: release signing via `android/key.properties`, launcher icons, dark splash, store listing + release checklist docs, package-licence audit and a repository-level save-upgrade test; release APK and iOS simulator builds verified. Still needs developer accounts: signed store uploads and the archive/TestFlight path. Known gap: the haptics switch still has no wired effect |
+| Phase status | **Phases 0–11 complete; Phase 12 automated half done; Phase 13 (release prep) in progress; V2-0 in progress** — Phase 12 added the QA scenario doc, restart/navigation leak tests, paired stress frame-cost tests (simulation + effects) and a splash broad-phase optimization; its manual device pass is still outstanding. Phase 13 so far: release signing via `android/key.properties`, launcher icons, dark splash, store listing + release checklist docs, package-licence audit and a repository-level save-upgrade test; release APK and iOS simulator builds verified. Haptics are wired for builds, upgrades and leaks (D71). V2-0 updated the toolchain to Flutter 3.47.8 / Dart 3.13.7 and refreshed host-side performance baselines; physical-device QA and graphics/memory profiling remain outstanding. Signed store uploads and the iOS archive/TestFlight path still need developer accounts. |
 
 ---
 

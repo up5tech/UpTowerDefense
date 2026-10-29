@@ -4,11 +4,12 @@ publish_to: 'none'
 version: 0.1.0+1
 
 environment:
-  sdk: ^3.13.5
+  # Flutter/Dart 3.13.7 includes the required Android TLS certificate fix.
+  sdk: ^3.13.7
 
 dependencies:
   # Game loop, component system, rendering, input and effects for the gameplay
-  # screen. Pinned to the current stable release verified in Phase 0.
+  # screen. Re-verified against current stable for V2-0.
   flame: ^1.38.2
   # One-shot gameplay SFX from bundled asset files (D6): wraps audioplayers for
   # Flame's lifecycle. Playback reads assets shipped in the bundle — offline,

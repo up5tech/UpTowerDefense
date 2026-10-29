@@ -6,14 +6,16 @@ No account, no server, no network access required to play.
 | | |
 |---|---|
 | Platform | Android, iOS |
-| Engine | Flutter 3.47.7 (stable) · Dart 3.13.5 · Flame 1.38.2 |
+| Engine | Flutter 3.47.8 (stable) · Dart 3.13.7 · Flame 1.38.2 |
 | Shell | Riverpod 3.4.3 · go_router 18.1.1 · shared_preferences 2.5.6 |
 | App ID / bundle ID | `com.uptowerdefense.game` (`…game.RunnerTests` for the iOS test bundle) |
 | Orientation | Landscape gameplay, responsive menus |
-| Phase status | **Phases 0–11 complete; Phase 12 automated half done; Phase 13 (release prep) in progress** — Phase 12 added the QA scenario doc, restart/navigation leak tests, paired stress frame-cost tests (simulation + effects) and a splash broad-phase optimization; its manual device pass is still outstanding. Phase 13 so far: release signing via `android/key.properties`, launcher icons, dark splash, store listing + release checklist docs, package-licence audit and a repository-level save-upgrade test; release APK and iOS simulator builds verified. Still needs developer accounts: signed store uploads and the archive/TestFlight path. Haptics are wired for builds, upgrades and core leaks; manual device QA and store-signing/archive gates remain outstanding |
+| Phase status | **Phases 0–11 complete; Phase 12 automated half done; Phase 13 (release prep) in progress** — Phase 12 added the QA scenario doc, restart/navigation leak tests, paired stress frame-cost tests (simulation + effects) and a splash broad-phase optimization; its manual device pass is still outstanding. Phase 13 so far: release signing via `android/key.properties`, launcher icons, dark splash, store listing + release checklist docs, package-licence audit and a repository-level save-upgrade test; release APK and iOS simulator builds verified. Still needs developer accounts: signed store uploads and the archive/TestFlight path. Haptics are wired for builds, upgrades and core leaks; manual device QA and store-signing/archive gates remain outstanding. V2-0 has refreshed host-side baselines and Flutter 3.47.8/Dart 3.13.7; device QA remains a gate |
 
-Version pins above are the toolchain verified in Phases 0–1. Re-check current
-stable versions before bumping.
+Version pins above reflect the stable toolchain verified for V2-0 on
+2026-10-29. Flutter 3.47.8 / Dart 3.13.7 includes the required Flutter/Dart
+security remediation; Flame 1.38.2 is the latest stable package. See
+[`docs/V2_PLAN.md`](docs/V2_PLAN.md) for the remaining device-QA gate.
 
 ## Documentation
 
@@ -40,7 +42,9 @@ sync with the code.
 
 ## Requirements
 
-- Flutter 3.47.7 or a compatible stable release (`flutter --version`).
+- Flutter 3.47.8 or later with Dart 3.13.7 or later for Android, Windows and
+  Linux (`flutter --version`); Apple-only builds should also stay current with
+  stable.
 - Xcode with an iOS simulator for iOS builds.
 - Android SDK with an emulator or device for Android builds.
 - CocoaPods (`pod --version`) for iOS.
