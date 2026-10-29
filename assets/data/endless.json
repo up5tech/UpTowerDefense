@@ -1,0 +1,74 @@
+{
+  "id": "endless",
+  "displayName": "Endless",
+  "mapId": "meadow_gate",
+  "coreHealth": 20,
+  "startingGold": 200,
+  "waveTransitionSeconds": 4,
+  "endless": true,
+  "endlessCountGrowth": 1.0,
+  "waves": [
+    {
+      "id": "wave_01",
+      "groups": [
+        {
+          "enemyId": "grunt",
+          "count": 5,
+          "spawnIntervalSeconds": 1.4,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "wave_02",
+      "groups": [
+        {
+          "enemyId": "runner",
+          "count": 4,
+          "spawnIntervalSeconds": 1.3,
+          "initialDelaySeconds": 1.5
+        },
+        {
+          "enemyId": "grunt",
+          "count": 6,
+          "spawnIntervalSeconds": 1.4,
+          "initialDelaySeconds": 3.0
+        }
+      ]
+    },
+    {
+      "id": "wave_03",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 4,
+          "spawnIntervalSeconds": 2.5,
+          "initialDelaySeconds": 1.5
+        },
+        {
+          "enemyId": "grunt",
+          "count": 8,
+          "spawnIntervalSeconds": 1.1,
+          "initialDelaySeconds": 4.0
+        }
+      ]
+    },
+    {
+      "id": "wave_04",
+      "groups": [
+        {
+          "enemyId": "boss",
+          "count": 1,
+          "spawnIntervalSeconds": 1.0,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 6,
+          "spawnIntervalSeconds": 1.2,
+          "initialDelaySeconds": 3.5
+        }
+      ]
+    }
+  ]
+}

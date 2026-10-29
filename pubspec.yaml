@@ -1,0 +1,69 @@
+name: up_tower_defense
+description: "UpTowerDefense — offline-first 2D tower defense game built with Flutter and Flame."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  # Game loop, component system, rendering, input and effects for the gameplay
+  # screen. Pinned to the current stable release verified in Phase 0.
+  flame: ^1.38.2
+  # One-shot gameplay SFX from bundled asset files (D6): wraps audioplayers for
+  # Flame's lifecycle. Playback reads assets shipped in the bundle — offline,
+  # no permission, no network — so it joins the offline allowlist deliberately.
+  flame_audio: ^2.12.2
+  flutter:
+    sdk: flutter
+
+  # State management and dependency injection for the shell, settings and,
+  # later, campaign progress and HUD state.
+  flutter_riverpod: ^3.4.3
+
+  # Declarative routes and reliable system-back handling for the shell.
+  go_router: ^18.1.1
+
+  # `@immutable` and friends for the plain-Dart domain layer, which must not
+  # import Flutter (see docs/adr/0001).
+  meta: ^1.18.3
+
+  # Local key-value storage for non-sensitive preferences (volume/toggles).
+  shared_preferences: ^2.5.6
+
+dev_dependencies:
+  # Flame's lint set (built on the recommended Dart/Flutter lints).
+  flame_lint: ^1.4.4
+  flutter_launcher_icons: ^0.14.4
+  flutter_test:
+    sdk: flutter
+
+# Derives every launcher icon from tool/icon/*.png (see
+# tool/generate_launcher_icon.dart). Dev-only: nothing of this package ships.
+flutter_launcher_icons:
+  image_path: tool/icon/icon.png
+  android: true
+  ios: true
+  adaptive_icon_background: '#0D1117'
+  adaptive_icon_foreground: tool/icon/icon_foreground.png
+  remove_alpha_ios: true
+  platforms:
+    android:
+      generate: true
+    ios:
+      generate: true
+
+flutter:
+  uses-material-design: true
+  assets:
+    # The attribution record ships as-is from docs/, so the credits screen
+    # renders the exact file the repo maintains — no copy to drift.
+    - docs/ASSET_ATTRIBUTIONS.md
+    - assets/audio/
+    - assets/data/campaign.json
+    - assets/data/endless.json
+    - assets/data/enemies/
+    - assets/data/levels/
+    - assets/data/maps/
+    - assets/data/towers/
+    - assets/images/

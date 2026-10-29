@@ -1,0 +1,33 @@
+# Static analysis configuration for UpTowerDefense.
+#
+# The lint set comes from `flame_lint`, which layers Flame's game-development
+# rules on top of the recommended Dart/Flutter lints. Gameplay rules (see
+# `docs/adr/0001-flutter-flame-layer-boundaries.md`) rely on strict casts so that
+# malformed content JSON fails loudly during development instead of silently
+# degrading gameplay.
+include: package:flame_lint/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    # Treat unused code as noise, not as a build failure.
+    unused_element: warning
+    unused_field: warning
+
+linter:
+  rules:
+    # Content and gameplay models are immutable by design; public docs on every
+    # member would add noise before the domain layer exists.
+    public_member_api_docs: false
+
+    # `dart format` already enforces 80 columns for code. The lint adds no signal
+    # for import directives, which cannot be wrapped, and fails the build on long
+    # package paths that are otherwise correct.
+    lines_longer_than_80_chars: false

@@ -1,0 +1,23 @@
+{
+  "id": "meadow_gate",
+  "displayName": "Meadow Gate",
+  "world": [1280, 720],
+  "buildPadRadius": 34,
+  "route": [
+    [0, 500],
+    [300, 500],
+    [300, 260],
+    [700, 260],
+    [700, 500],
+    [1150, 500]
+  ],
+  "core": [1150, 500],
+  "buildPads": [
+    { "id": "pad_a", "label": "A", "center": [180, 360] },
+    { "id": "pad_b", "label": "B", "center": [460, 360] },
+    { "id": "pad_c", "label": "C", "center": [860, 380] },
+    { "id": "pad_d", "label": "D", "center": [400, 580] },
+    { "id": "pad_e", "label": "E", "center": [980, 620] },
+    { "id": "pad_f", "label": "F", "center": [380, 320] }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Flutter 开发",
+  "installedAt": 1792939922810,
+  "source": "marketplace",
+  "version": "1.0.0",
+  "skillId": "skill_2053081993476866048",
+  "pay_mode": 0,
+  "examples_zh": [
+    "用 Flutter 做一个订阅管理页面",
+    "为移动端 onboarding 配置 GoRouter 路由",
+    "用 Riverpod 实现 trial 状态管理",
+    "优化跨平台列表页的性能"
+  ],
+  "examples_en": [
+    "Build a subscription management screen in Flutter",
+    "Configure GoRouter routes for mobile onboarding",
+    "Use Riverpod to manage trial status",
+    "Optimize performance for this cross-platform list screen"
+  ],
+  "description_zh": "Flutter 跨平台开发指南",
+  "description_en": "Flutter cross-platform dev guide (Riverpod, GoRouter)",
+  "iconSource": "https://openplatform-cdn.codebuddy.ai/public/skills/icons/flutter-dev.svg",
+  "iconLocalPath": "/Users/up5techjacky/.workbuddy-ai/skills/flutter-dev/_icon.svg",
+  "iconDownloadedFrom": "https://openplatform-cdn.codebuddy.ai/public/skills/icons/flutter-dev.svg"
+}

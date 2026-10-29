@@ -1,0 +1,44 @@
+{
+  "enemies": [
+    {
+      "id": "grunt",
+      "displayName": "Grunt",
+      "maxHealth": 100,
+      "speed": 80,
+      "coreDamageOnLeak": 1,
+      "rewardGold": 10,
+      "radius": 14,
+      "color": "#D96B5B"
+    },
+    {
+      "id": "runner",
+      "displayName": "Runner",
+      "maxHealth": 60,
+      "speed": 140,
+      "coreDamageOnLeak": 1,
+      "rewardGold": 8,
+      "radius": 11,
+      "color": "#E0A34A"
+    },
+    {
+      "id": "brute",
+      "displayName": "Brute",
+      "maxHealth": 420,
+      "speed": 55,
+      "coreDamageOnLeak": 2,
+      "rewardGold": 22,
+      "radius": 17,
+      "color": "#8A7F8D"
+    },
+    {
+      "id": "boss",
+      "displayName": "Warden",
+      "maxHealth": 1200,
+      "speed": 42,
+      "coreDamageOnLeak": 6,
+      "rewardGold": 140,
+      "radius": 24,
+      "color": "#A45CD6"
+    }
+  ]
+}

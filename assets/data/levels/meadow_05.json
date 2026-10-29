@@ -1,0 +1,87 @@
+{
+  "id": "meadow_05",
+  "displayName": "Gatekeeper",
+  "mapId": "meadow_gate",
+  "coreHealth": 16,
+  "startingGold": 220,
+  "waveTransitionSeconds": 5,
+  "objectives": [
+    { "kind": "maxTowers", "value": 3 },
+    { "kind": "coreAbove", "value": 12 }
+  ],
+  "waves": [
+    {
+      "id": "wave_01",
+      "groups": [
+        {
+          "enemyId": "grunt",
+          "count": 7,
+          "spawnIntervalSeconds": 1.1,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "wave_02",
+      "groups": [
+        {
+          "enemyId": "runner",
+          "count": 5,
+          "spawnIntervalSeconds": 0.9,
+          "initialDelaySeconds": 1.5
+        },
+        {
+          "enemyId": "grunt",
+          "count": 4,
+          "spawnIntervalSeconds": 1.2,
+          "initialDelaySeconds": 4.0
+        }
+      ]
+    },
+    {
+      "id": "wave_03",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 2,
+          "spawnIntervalSeconds": 2.2,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "grunt",
+          "count": 5,
+          "spawnIntervalSeconds": 1.1,
+          "initialDelaySeconds": 3.0
+        }
+      ]
+    },
+    {
+      "id": "wave_04",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 3,
+          "spawnIntervalSeconds": 2.0,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 5,
+          "spawnIntervalSeconds": 1.0,
+          "initialDelaySeconds": 5.0
+        }
+      ]
+    },
+    {
+      "id": "wave_05",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 4,
+          "spawnIntervalSeconds": 1.8,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    }
+  ]
+}

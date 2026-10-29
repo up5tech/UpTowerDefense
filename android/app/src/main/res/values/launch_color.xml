@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared by the launch window and the running activity: the game is dark
+         on every screen (AppTheme is Brightness.dark), so both light- and
+         dark-mode launches start on the same background colour. -->
+    <color name="launch_background">#0D1117</color>
+</resources>

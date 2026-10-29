@@ -1,0 +1,70 @@
+{
+  "id": "ember_02",
+  "displayName": "Ash Run",
+  "mapId": "ember_pass",
+  "coreHealth": 15,
+  "startingGold": 210,
+  "waveTransitionSeconds": 5,
+  "objectives": [
+    { "kind": "maxTowers", "value": 3 },
+    { "kind": "coreAbove", "value": 11 }
+  ],
+  "waves": [
+    {
+      "id": "wave_01",
+      "groups": [
+        {
+          "enemyId": "runner",
+          "count": 6,
+          "spawnIntervalSeconds": 0.9,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "wave_02",
+      "groups": [
+        {
+          "enemyId": "grunt",
+          "count": 6,
+          "spawnIntervalSeconds": 1.1,
+          "initialDelaySeconds": 1.5
+        },
+        {
+          "enemyId": "runner",
+          "count": 4,
+          "spawnIntervalSeconds": 0.9,
+          "initialDelaySeconds": 4.0
+        }
+      ]
+    },
+    {
+      "id": "wave_03",
+      "groups": [
+        {
+          "enemyId": "runner",
+          "count": 8,
+          "spawnIntervalSeconds": 0.8,
+          "initialDelaySeconds": 1.5
+        }
+      ]
+    },
+    {
+      "id": "wave_04",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 1,
+          "spawnIntervalSeconds": 2.0,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 6,
+          "spawnIntervalSeconds": 0.9,
+          "initialDelaySeconds": 4.0
+        }
+      ]
+    }
+  ]
+}

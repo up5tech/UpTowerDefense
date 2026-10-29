@@ -1,0 +1,23 @@
+{
+  "id": "ember_pass",
+  "displayName": "Ember Pass",
+  "world": [1280, 720],
+  "buildPadRadius": 34,
+  "route": [
+    [0, 200],
+    [420, 200],
+    [420, 520],
+    [860, 520],
+    [860, 160],
+    [1180, 160]
+  ],
+  "core": [1180, 160],
+  "buildPads": [
+    { "id": "pad_a", "label": "A", "center": [220, 340] },
+    { "id": "pad_b", "label": "B", "center": [620, 340] },
+    { "id": "pad_c", "label": "C", "center": [620, 660] },
+    { "id": "pad_d", "label": "D", "center": [1000, 400] },
+    { "id": "pad_e", "label": "E", "center": [60, 340] },
+    { "id": "pad_f", "label": "F", "center": [330, 290] }
+  ]
+}

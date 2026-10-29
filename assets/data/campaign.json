@@ -1,0 +1,26 @@
+{
+  "regions": [
+    {
+      "id": "meadow",
+      "displayName": "Meadow Reach",
+      "levels": [
+        { "id": "meadow_01", "displayName": "First Light" },
+        { "id": "meadow_02", "displayName": "Quick Feet" },
+        { "id": "meadow_03", "displayName": "Two Roads" },
+        { "id": "meadow_04", "displayName": "Held Line" },
+        { "id": "meadow_05", "displayName": "Gatekeeper" }
+      ]
+    },
+    {
+      "id": "ember",
+      "displayName": "Ember Pass",
+      "levels": [
+        { "id": "ember_01", "displayName": "Cinder Gate" },
+        { "id": "ember_02", "displayName": "Ash Run" },
+        { "id": "ember_03", "displayName": "Anvil" },
+        { "id": "ember_04", "displayName": "Furnace" },
+        { "id": "ember_05", "displayName": "The Warden" }
+      ]
+    }
+  ]
+}

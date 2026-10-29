@@ -1,0 +1,14 @@
+# Release signing for UpTowerDefense.
+#
+# Copy this file to android/key.properties (git-ignored, together with the
+# keystore itself) and fill in real values. Without it, release builds compile
+# signed with the debug key — fine for local runs, never for a store upload.
+# Full procedure: docs/RELEASE_CHECKLIST.md.
+#
+# Generate the keystore once:
+#   keytool -genkey -v -keystore ~/keys/uptowerdefense-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias uptowerdefense
+storeFile=/absolute/path/to/uptowerdefense-release.jks
+storePassword=
+keyAlias=uptowerdefense
+keyPassword=

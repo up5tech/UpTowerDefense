@@ -1,0 +1,93 @@
+{
+  "id": "ember_05",
+  "displayName": "The Warden",
+  "mapId": "ember_pass",
+  "coreHealth": 12,
+  "startingGold": 280,
+  "waveTransitionSeconds": 5,
+  "objectives": [
+    { "kind": "maxTowers", "value": 3 },
+    { "kind": "coreAbove", "value": 8 }
+  ],
+  "waves": [
+    {
+      "id": "wave_01",
+      "groups": [
+        {
+          "enemyId": "grunt",
+          "count": 8,
+          "spawnIntervalSeconds": 1.0,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "wave_02",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 2,
+          "spawnIntervalSeconds": 2.2,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 5,
+          "spawnIntervalSeconds": 0.9,
+          "initialDelaySeconds": 4.0
+        }
+      ]
+    },
+    {
+      "id": "wave_03",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 3,
+          "spawnIntervalSeconds": 2.0,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "grunt",
+          "count": 6,
+          "spawnIntervalSeconds": 1.0,
+          "initialDelaySeconds": 4.0
+        }
+      ]
+    },
+    {
+      "id": "wave_04",
+      "groups": [
+        {
+          "enemyId": "boss",
+          "count": 1,
+          "spawnIntervalSeconds": 1.0,
+          "initialDelaySeconds": 3.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 4,
+          "spawnIntervalSeconds": 0.9,
+          "initialDelaySeconds": 6.0
+        }
+      ]
+    },
+    {
+      "id": "wave_05",
+      "groups": [
+        {
+          "enemyId": "boss",
+          "count": 1,
+          "spawnIntervalSeconds": 1.0,
+          "initialDelaySeconds": 8.0
+        },
+        {
+          "enemyId": "brute",
+          "count": 3,
+          "spawnIntervalSeconds": 1.8,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    }
+  ]
+}

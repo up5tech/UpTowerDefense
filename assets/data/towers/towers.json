@@ -1,0 +1,46 @@
+{
+  "towers": [
+    {
+      "id": "ranger",
+      "displayName": "Ranger Tower",
+      "role": "Fast single target",
+      "description": "Cheap, quick shots that pick off the leading enemy.",
+      "buildCost": 70,
+      "sellRefundRate": 0.6,
+      "color": "#4FD1C5",
+      "levels": [
+        { "damage": 18, "range": 210, "fireCooldownSeconds": 0.7, "projectileSpeed": 600, "upgradeCost": 60 },
+        { "damage": 27, "range": 225, "fireCooldownSeconds": 0.66, "projectileSpeed": 600, "upgradeCost": 95 },
+        { "damage": 40, "range": 245, "fireCooldownSeconds": 0.6, "projectileSpeed": 600 }
+      ]
+    },
+    {
+      "id": "frost",
+      "displayName": "Frost Tower",
+      "role": "Control",
+      "description": "Chills enemies so every other tower lands more hits.",
+      "buildCost": 85,
+      "sellRefundRate": 0.6,
+      "color": "#7FB8FF",
+      "levels": [
+        { "damage": 4, "range": 190, "fireCooldownSeconds": 1.2, "projectileSpeed": 420, "splashRadius": 140, "slow": { "magnitude": 0.4, "durationSeconds": 2.5, "minSpeedRatio": 0.4, "damageAmp": 0.25 }, "upgradeCost": 65 },
+        { "damage": 6, "range": 205, "fireCooldownSeconds": 1.1, "projectileSpeed": 420, "splashRadius": 148, "slow": { "magnitude": 0.5, "durationSeconds": 3, "minSpeedRatio": 0.4, "damageAmp": 0.3 }, "upgradeCost": 100 },
+        { "damage": 9, "range": 220, "fireCooldownSeconds": 1, "projectileSpeed": 420, "splashRadius": 156, "slow": { "magnitude": 0.6, "durationSeconds": 3.5, "minSpeedRatio": 0.4, "damageAmp": 0.35 } }
+      ]
+    },
+    {
+      "id": "cannon",
+      "displayName": "Cannon Tower",
+      "role": "Area damage",
+      "description": "Slow shells that explode and hurt every enemy in the blast.",
+      "buildCost": 110,
+      "sellRefundRate": 0.6,
+      "color": "#E8A05C",
+      "levels": [
+        { "damage": 34, "range": 200, "fireCooldownSeconds": 1.6, "projectileSpeed": 380, "splashRadius": 140, "upgradeCost": 90 },
+        { "damage": 52, "range": 215, "fireCooldownSeconds": 1.5, "projectileSpeed": 380, "splashRadius": 148, "upgradeCost": 140 },
+        { "damage": 78, "range": 230, "fireCooldownSeconds": 1.4, "projectileSpeed": 380, "splashRadius": 156 }
+      ]
+    }
+  ]
+}

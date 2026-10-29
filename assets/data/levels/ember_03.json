@@ -1,0 +1,81 @@
+{
+  "id": "ember_03",
+  "displayName": "Anvil",
+  "mapId": "ember_pass",
+  "coreHealth": 15,
+  "startingGold": 230,
+  "waveTransitionSeconds": 5,
+  "objectives": [
+    { "kind": "maxTowers", "value": 3 },
+    { "kind": "deadlineSeconds", "value": 64 }
+  ],
+  "waves": [
+    {
+      "id": "wave_01",
+      "groups": [
+        {
+          "enemyId": "grunt",
+          "count": 6,
+          "spawnIntervalSeconds": 1.1,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "wave_02",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 2,
+          "spawnIntervalSeconds": 2.4,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "wave_03",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 2,
+          "spawnIntervalSeconds": 2.2,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "grunt",
+          "count": 5,
+          "spawnIntervalSeconds": 1.1,
+          "initialDelaySeconds": 3.0
+        }
+      ]
+    },
+    {
+      "id": "wave_04",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 3,
+          "spawnIntervalSeconds": 2.0,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 5,
+          "spawnIntervalSeconds": 0.9,
+          "initialDelaySeconds": 5.0
+        }
+      ]
+    },
+    {
+      "id": "wave_05",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 4,
+          "spawnIntervalSeconds": 1.8,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    }
+  ]
+}
