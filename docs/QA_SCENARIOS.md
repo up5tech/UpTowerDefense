@@ -5,7 +5,7 @@ Repeatable manual QA scenarios for the Phase 12 acceptance criteria in
 expected result and the acceptance criterion it covers, so any run produces the
 same evidence twice.
 
-Automated coverage is *not* repeated here: `flutter test` (404 tests),
+Automated coverage is *not* repeated here: `flutter test` (449 tests),
 `flutter analyze`, `dart format`, `tool/validate_content.dart`, the two stress
 tests (`stress_frame_cost_test` for the simulation half, `stress_fx_cost_test`
 for the effects half) and `restart_navigation_leak_test` are the scripted half
@@ -86,6 +86,7 @@ a level in progress at ~50% wave.
 | A2 | Toggle music off/on in Settings while a level plays. | Music stops/starts live through the same controller; no restart from the beginning of the track, no crash. |
 | A3 | Toggle SFX off during gameplay. | Sound effects stop immediately; combat continues normally. |
 | A4 | Route audio to a Bluetooth device (or plug/unplug wired headphones) mid-level, then play 1 min. | No crash; audio continues or resumes; game timing unaffected. |
+| A5 | On a device that supports haptics, enable Haptics; build/upgrade a tower and allow one enemy to leak. Repeat with Haptics disabled. | Build/upgrade gives a light acknowledgement and a leak gives a stronger warning when enabled; routine shots/hits do not buzz. Disabled produces no haptics; gameplay remains unchanged. Record device support and result. |
 
 ## 7. Repeated restart and navigation — covers AC "restart and repeated navigation do not accumulate stale components or timers"
 

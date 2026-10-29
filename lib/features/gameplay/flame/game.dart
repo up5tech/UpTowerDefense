@@ -8,6 +8,7 @@ import 'package:up_tower_defense/features/gameplay/domain/level_session.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/map_definition.dart';
 import 'package:up_tower_defense/features/gameplay/flame/enemy_layer.dart';
 import 'package:up_tower_defense/features/gameplay/flame/fx_layer.dart';
+import 'package:up_tower_defense/features/gameplay/flame/haptics_layer.dart';
 import 'package:up_tower_defense/features/gameplay/flame/map_component.dart';
 import 'package:up_tower_defense/features/gameplay/flame/projectile_layer.dart';
 import 'package:up_tower_defense/features/gameplay/flame/sfx_layer.dart';
@@ -30,11 +31,17 @@ class UpTowerDefenseGame extends FlameGame {
     bool sfxEnabled = false,
     double sfxVolume = 1,
     SfxSink? sfxSink,
+    bool hapticsEnabled = false,
+    HapticsSink? hapticsSink,
   }) : fxLayer = FxLayer(reducedMotion: reducedMotion),
        sfxLayer = SfxLayer(
          enabled: sfxEnabled,
          sink: sfxSink,
          volume: sfxVolume,
+       ),
+       hapticsLayer = HapticsLayer(
+         enabled: hapticsEnabled,
+         sink: hapticsSink,
        ),
        super(
          camera: CameraComponent.withFixedResolution(
@@ -66,6 +73,9 @@ class UpTowerDefenseGame extends FlameGame {
 
   /// Sound cues, fed from the same facts in the same frame as [fxLayer].
   final SfxLayer sfxLayer;
+
+  /// Important-action haptics, fed from those same published facts.
+  final HapticsLayer hapticsLayer;
 
   LevelSession get session => controller.session;
 
@@ -108,12 +118,12 @@ class UpTowerDefenseGame extends FlameGame {
     // lasts the same number of simulation seconds at either speed.
     final simulationDelta = controller.advance(clamped);
     super.update(simulationDelta);
-    // Effects and sound are published after the frame's component update, so
-    // one fired this frame starts with its full lifetime and its cue instead
-    // of losing a frame.
+    // Feedback is published after the frame's component update, so an event
+    // from this frame starts at full lifetime and reaches audio/haptics once.
     final events = session.drainEvents();
     fxLayer.publish(events);
     sfxLayer.handle(events);
+    hapticsLayer.handle(events);
   }
 
   /// Pauses or resumes the attempt.

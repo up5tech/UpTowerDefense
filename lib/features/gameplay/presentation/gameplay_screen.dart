@@ -24,6 +24,7 @@ import 'package:up_tower_defense/features/gameplay/domain/models/tower_definitio
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_instance.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_level_stats.dart';
 import 'package:up_tower_defense/features/gameplay/flame/flame_audio_sfx_sink.dart';
+import 'package:up_tower_defense/features/gameplay/flame/flutter_haptics_sink.dart';
 import 'package:up_tower_defense/features/gameplay/flame/game.dart';
 import 'package:up_tower_defense/features/settings/application/settings_providers.dart';
 
@@ -207,8 +208,8 @@ class _GameplayScreenState extends ConsumerState<GameplayScreen>
       _ownedController = controller;
     }
 
-    // The accessibility and audio switches are read once here: the settings
-    // screen lives behind a route that disposes the game, so a change always
+    // The accessibility, audio and haptics switches are read once here: the
+    // settings screen lives behind a route that disposes the game, so a change always
     // meets a fresh game instance rather than a stale one.
     final settings = ref.read(settingsProvider);
     return _createdGame = UpTowerDefenseGame(
@@ -218,6 +219,8 @@ class _GameplayScreenState extends ConsumerState<GameplayScreen>
       sfxEnabled: settings.sfxEnabled,
       sfxVolume: settings.sfxVolume,
       sfxSink: const FlameAudioSfxSink(),
+      hapticsEnabled: settings.hapticsEnabled,
+      hapticsSink: const FlutterHapticsSink(),
     );
   }
 

@@ -21,9 +21,23 @@ Release signing lives outside the repo:
    updated again** — Play requires every update to be signed by the same key.
 
 Without `key.properties`, release builds still compile — signed with the debug
-key — so local `flutter run --release` and CI keep working. A store upload
-must always come from a machine with the real key; verify with
-`apksigner verify --print-certs` before uploading.
+key — so local `flutter run --release` and CI keep working. Such an artifact is
+not store-ready. A store upload must always come from a machine with the real
+key; verify with `apksigner verify --print-certs` before uploading.
+
+**Current V1 gate status (2026-10-29): NOT SIGNED OFF.** The local full Flutter
+test suite, analysis, formatting and content validator pass; Android release
+APK and iOS Simulator builds are available. The APK on this machine is debug-
+signed because `android/key.properties` is absent. The Android App Bundle build
+currently fails in native-library symbol stripping, and `flutter doctor`
+reports missing Android command-line tools and unaccepted/unknown Android
+licences. An iPhone 17 Simulator launch smoke check passed, but no physical
+Android/iOS QA, airplane-mode gameplay pass, upgrade-over-previous-release
+check, Android release certificate, signed iOS archive/TestFlight export or
+store account upload has been verified. An unsigned `.xcarchive` exists, but is
+not a distributable build. Do not treat this local status note as a
+completed sign-off; finish the unchecked gates below with recorded device/build
+evidence.
 
 iOS signing is configured in Xcode (automatic signing with the development
 team, or an exported `.p12` for CI). The bundle id is

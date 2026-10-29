@@ -63,13 +63,6 @@ class SettingsScreen extends ConsumerWidget {
         const SizedBox(height: 16),
         const _ProgressSection(),
         const SizedBox(height: 16),
-        Text(
-          'Music, sound effects and reduced motion are live; haptics still '
-          'await their wiring.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
       ],
     );
   }
