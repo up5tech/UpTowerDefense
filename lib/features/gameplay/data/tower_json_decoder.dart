@@ -63,6 +63,30 @@ abstract final class TowerJsonDecoder {
       upgradeCost: json['upgradeCost'] == null
           ? null
           : JsonReader.requireInt(json, 'upgradeCost', parent: path),
+      chainCount: json['chainCount'] == null
+          ? 0
+          : JsonReader.requireInt(json, 'chainCount', parent: path),
+      chainRadius: JsonReader.optionalNumber(
+        json,
+        'chainRadius',
+        parent: path,
+      ),
+      chainFalloff: JsonReader.optionalNumber(
+        json,
+        'chainFalloff',
+        parent: path,
+        fallback: 1,
+      ),
+      auraRadius: JsonReader.optionalNumber(
+        json,
+        'auraRadius',
+        parent: path,
+      ),
+      auraRangeBonus: JsonReader.optionalNumber(
+        json,
+        'auraRangeBonus',
+        parent: path,
+      ),
     );
   }
 

@@ -11,16 +11,25 @@ bump. The toolchain re-verification is one small phase inside it (V2-0), because
 a store update is also the moment we are forced to re-check Flutter, Flame and
 platform requirements.
 
-**Status (2026-10-29).** V2-0 is in progress; its automated code, toolchain and
-host-side baseline work are complete, but its device-QA exit gate is not signed
-off. Haptics were wired in Phase 13 (D71), and the local SDK is now Flutter
-3.47.8 / Dart 3.13.7. The latter is a required security update for Android,
-Windows and Linux Flutter apps, not an optional future bump. No physical device
-is currently available to this workspace, so the manual offline/interruption/
-haptics and graphics/memory profile remains outstanding; do not start V2-1
-until that gate is recorded or explicitly narrowed here with evidence.
+**Status (2026-11-02).** V2-0 is complete on the evidence recorded in
+[`QA_SCENARIOS.md`](QA_SCENARIOS.md) §9. Haptics were wired in Phase 13 (D71);
+the local SDK is Flutter 3.47.8 / Dart 3.13.7, a required security update for
+Android, Windows and Linux Flutter apps rather than an optional future bump; and
+the Phase 12 device scenarios ran against the release APK on an Android 15
+emulator — offline play, interruption/resume, force-kill recovery, repeated
+restart and navigation, orientation, haptics and memory. No physical device is
+available to this workspace, so three checks are deferred to V2-6's hardware
+pass by decision, not by omission: audio audibility, release-mode GPU frame
+pacing (the AVD rasterises on `swiftshader_indirect`) and physical-device
+memory/thermal behaviour. The pass left two low-severity findings open (audio
+unverified, Android 12+ system splash paints white).
 
-Work landed ahead of V2-3: all ten campaign levels now declare objectives, and
+V2-1 shipped Region 3: `hollow_court` with seven pads, five levels
+(`hollow_01`–`hollow_05`) and the D69 boss speed surge. The probe runs 15/15
+levels under all four strategies, and every ember row of the pinned table is
+unchanged, so the surge cost the shipped campaign nothing.
+
+Work landed ahead of V2-3: all fifteen campaign levels now declare objectives, and
 the decoder, content gate and `CONTENT_AUTHORING.md` cover their format and
 authoring constraints. Objective evaluation, stars, HUD/results and save v4
 remain unimplemented. Planned scope decisions are recorded in
@@ -132,9 +141,13 @@ Tasks:
 - [x] Re-run the normal campaign and stress simulation/effects baselines and
   record the host-side measurements in the QA doc. These are not device frame
   times or a substitute for release-mode GPU profiling.
-- [ ] Complete and record the applicable Phase 12 device scenarios (offline
+- [x] Complete and record the applicable Phase 12 device scenarios (offline
   play, interruption/resume, haptics, repeated navigation, and frame/memory
   profile), or document an evidence-based reduction before the V2-0 exit review.
+  Recorded 2026-11-02 on an Android 15 emulator with the release APK. The
+  frame/memory profile is narrowed to the host baselines plus `dumpsys meminfo`
+  and `dumpsys vibrator_manager`; GPU frame pacing and audibility move to V2-6's
+  hardware pass, per `QA_SCENARIOS.md` §9.
 
 Acceptance criteria and current evidence:
 
@@ -145,9 +158,12 @@ Acceptance criteria and current evidence:
   release permission guard remains in the suite).
 - [x] The QA baseline table covers a normal campaign level, crowded simulation,
   and real-stream plus saturated effects.
-- [ ] Device-only Phase 12 checks are run and signed off, or their remaining
-  scope is explicitly narrowed with evidence. Until then V2-0 is not complete
-  and V2-1 remains gated.
+- [x] Device-only Phase 12 checks are run and signed off, or their remaining
+  scope is explicitly narrowed with evidence. Passed on the emulator: O1–O6,
+  I1–I3, I5, I6, R1–R4, P1–P4, P6, A5, M1–M3, with A2/A3 partial and M2 a
+  spot-check. Narrowed with reasons and substitute coverage: I4, P5, A1, A4, M4,
+  S1–S3 (`QA_SCENARIOS.md` §9, "Not produced on this host"). V2-1 may start;
+  V2-6 must not be signed off until the deferred checks run on hardware.
 
 ### V2-1 — Region 3: the third act (M)
 
@@ -156,35 +172,52 @@ single bounded boss phase below is the only new combat rule in this phase.
 
 Tasks:
 
-- Author `assets/data/maps/` entry for the region (one map, new route shape;
+- [x] Author `assets/data/maps/` entry for the region (one map, new route shape;
   topology and pacing only, no palette field and no hazard — D63).
-- Author five levels with cresting difficulty; extend `campaign.json` and give
+  `hollow_court`: a 2,080-unit switchback that shares its middle climb between
+  two approach legs, with seven pads (one more than either shipped map).
+- [x] Author five levels with cresting difficulty; extend `campaign.json` and give
   each new campaign level exactly two objectives using the already-authored D68
   format. This is content authoring only; V2-3 still implements objective scoring
   and presentation. Every level must remain completable with the three towers
   already shipped; the two V2-2 towers may add options but must not become a
-  progression requirement.
-- Give the existing boss one data-driven speed-surge phase with validated fields
+  progression requirement. `hollow_01`–`hollow_05` ship with 300–380 starting
+  gold and no new tower requirement.
+- [x] Give the existing boss one data-driven speed-surge phase with validated fields
   `speedSurgeHealthRatio` (0.5; valid range `(0, 1]`),
   `speedSurgeMultiplier` (1.5; must be `> 1`) and
   `speedSurgeDurationSeconds` (3; must be positive). It triggers once when
   health first reaches or drops below the threshold and uses simulation time,
-  never wall-clock time.
-- Teach the speed surge in one level before it is required.
+  never wall-clock time. Carried by `SpeedSurge` on the definition, armed inside
+  `_applyDamage`, spent by `EnemyState.currentSpeed`.
+- [x] Teach the speed surge in one level before it is required: `hollow_04`
+  fields a single boss early enough to be watched, and `hollow_05` relies on it
+  with two.
 
-Acceptance criteria:
-
-- `content_assets_test`, `campaign_assets_test` and
+Acceptance criteria:- [x] `content_assets_test`, `campaign_assets_test` and
   `tool/validate_content.dart` all pass; every pad is reachable, clear of the
   top HUD band (D62 rule), each new campaign level has two feasible objectives,
-  and the level leaves enough gold to build.
-- With the three currently shipped towers, the balance probe runs 15/15 levels
-  under all four strategies; update the pinned table in `balance_regression_test`
-  in the same change as the data.
-- The boss phase is covered by domain tests for its threshold, one-time trigger,
+  and the level leaves enough gold to build. The two `maxTowers` goals were
+  checked by replaying the levels under a capped three- and four-tower build, not
+  only by the affordability rule.
+- [x] With the three currently shipped towers, the balance probe runs 15/15 levels
+  under all four strategies; update the pinned table in
+  `balance_regression_test` in the same change as the data. Ten rows are pinned
+  now; the five new ones were tuned over several probe runs (the first dry of
+  the map leaked nothing at all).
+- [x] The boss phase is covered by domain tests for its threshold, one-time trigger,
   duration and frame-rate independence; all three named fields are validated for
-  bounds and are accepted only on the boss definition.
-- No new package and no new content field that the validator does not check.
+  bounds and are accepted only on the boss definition (`boss_speed_surge_test`,
+  plus the decoder and validator cases in `enemy_json_decoder_test`).
+- [x] No new package and no new content field that the validator does not check:
+  the one new field is `isBoss`, and `EnemyValidator` rejects a surge on any
+  enemy that does not set it.
+
+**Remaining manual step:** Region 3 has not been played on a device yet. The
+automated gates cover its geometry (reach, HUD strip, clearances), its load path
+and its balance, but not eyes-on rendering; `hollow_01`–`hollow_05` should be
+played once in landscape before the region is called finished, which the
+emulator run cannot do because the campaign unlocks in order.
 
 **Risk to watch:** a third map tempts extra mechanics. The boss speed surge above
 is the sole V2-1 exception and is fixed by D69; any other new rule belongs in a

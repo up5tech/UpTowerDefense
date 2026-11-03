@@ -50,18 +50,59 @@ class EnemyState {
   /// Whether a slow is currently affecting this enemy.
   bool get isSlowed => slowMagnitude > 0 && slowRemainingSeconds > 0;
 
-  /// Movement speed right now, in world units per second.
+  /// Whether the boss surge has already fired; it fires at most once a life.
+  bool surgeSpent = false;
+
+  /// Simulation seconds of speed surge left; zero when not surging.
+  double surgeRemainingSeconds = 0;
+
+  /// Whether the boss's one-shot speed burst is currently active.
+  bool get isSurging => surgeRemainingSeconds > 0;
+
+  /// Starts the definition's surge if it has one, has not fired, and health has
+  /// fallen to the arming threshold.
   ///
-  /// A slow removes [EnemyDefinition.speed] multiplied by [slowMagnitude] but
-  /// never takes the result below the slow's configured floor, so stacking
-  /// slow towers cannot freeze a target.
-  double get currentSpeed {
-    if (!isSlowed) {
+  /// Returns whether it fired, so a caller (or a test) can tell "the boss just
+  /// crossed half health" from "nothing happened" without reading three fields.
+  bool tryStartSpeedSurge() {
+    final surge = definition.speedSurge;
+    if (surge == null || surgeSpent) {
+      return false;
+    }
+    if (!surge.armsAt(health, definition.maxHealth)) {
+      return false;
+    }
+    surgeSpent = true;
+    surgeRemainingSeconds = surge.durationSeconds;
+    return true;
+  }
+
+  /// Unmodified speed for this instant: the definition's speed, or that speed
+  /// times the surge multiplier while the burst lasts. Slows are applied on top
+  /// by [currentSpeed].
+  double get _baseSpeed {
+    final surge = definition.speedSurge;
+    if (surge == null || !isSurging) {
       return definition.speed;
     }
-    final slowed = definition.speed * (1 - slowMagnitude);
-    return slowed < definition.speed * slowMinSpeedRatio
-        ? definition.speed * slowMinSpeedRatio
+    return definition.speed * surge.multiplier;
+  }
+
+  /// Movement speed right now, in world units per second.
+  ///
+  /// A slow removes the current base speed multiplied by [slowMagnitude] but
+  /// never takes the result below the slow's configured floor, so stacking slow
+  /// towers cannot freeze a target. The surge is part of that base, which means a
+  /// chilled boss still accelerates when it turns — the chill throttles whatever
+  /// speed it has rather than cancelling the authored escalation.
+  double get currentSpeed {
+    final base = _baseSpeed;
+    if (!isSlowed) {
+      return base;
+    }
+    final slowed = base * (1 - slowMagnitude);
+    return slowed < base * slowMinSpeedRatio
+        ? base * slowMinSpeedRatio
         : slowed;
   }
 

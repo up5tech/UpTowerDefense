@@ -28,6 +28,7 @@ abstract final class ContentCatalog {
   static const Map<String, String> mapAssetsById = {
     'meadow_gate': 'assets/data/maps/meadow_gate.json',
     'ember_pass': 'assets/data/maps/ember_pass.json',
+    'hollow_court': 'assets/data/maps/hollow_court.json',
   };
 
   /// Asset for [mapId], or null when no such map ships with the app.

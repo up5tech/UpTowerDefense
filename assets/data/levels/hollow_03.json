@@ -1,0 +1,99 @@
+{
+  "id": "hollow_03",
+  "displayName": "The Long Watch",
+  "mapId": "hollow_court",
+  "coreHealth": 20,
+  "startingGold": 320,
+  "waveTransitionSeconds": 5,
+  "objectives": [
+    { "kind": "coreAbove", "value": 14 },
+    { "kind": "deadlineSeconds", "value": 330 }
+  ],
+  "waves": [
+    {
+      "id": "wave_01",
+      "groups": [
+        {
+          "enemyId": "grunt",
+          "count": 14,
+          "spawnIntervalSeconds": 0.7,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 9,
+          "spawnIntervalSeconds": 0.7,
+          "initialDelaySeconds": 5.0
+        }
+      ]
+    },
+    {
+      "id": "wave_02",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 6,
+          "spawnIntervalSeconds": 1.5,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 12,
+          "spawnIntervalSeconds": 0.6,
+          "initialDelaySeconds": 4.0
+        }
+      ]
+    },
+    {
+      "id": "wave_03",
+      "groups": [
+        {
+          "enemyId": "runner",
+          "count": 16,
+          "spawnIntervalSeconds": 0.5,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "brute",
+          "count": 6,
+          "spawnIntervalSeconds": 1.5,
+          "initialDelaySeconds": 5.0
+        }
+      ]
+    },
+    {
+      "id": "wave_04",
+      "groups": [
+        {
+          "enemyId": "grunt",
+          "count": 16,
+          "spawnIntervalSeconds": 0.7,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "brute",
+          "count": 7,
+          "spawnIntervalSeconds": 1.4,
+          "initialDelaySeconds": 5.0
+        }
+      ]
+    },
+    {
+      "id": "wave_05",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 8,
+          "spawnIntervalSeconds": 1.2,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 14,
+          "spawnIntervalSeconds": 0.6,
+          "initialDelaySeconds": 6.0
+        }
+      ]
+    }
+  ]
+}

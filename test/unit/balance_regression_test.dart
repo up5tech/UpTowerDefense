@@ -61,6 +61,15 @@ const Map<String, Map<String, List<(String, String)>>> _probePlans = {
       ('pad_e', 'ranger'),
       ('pad_f', 'ranger'),
     ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'ranger'),
+    ],
   },
   'cannon crossfire': {
     'meadow_gate': [
@@ -78,6 +87,15 @@ const Map<String, Map<String, List<(String, String)>>> _probePlans = {
       ('pad_d', 'ranger'),
       ('pad_e', 'ranger'),
       ('pad_f', 'ranger'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'cannon'),
+      ('pad_e', 'cannon'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'ranger'),
     ],
   },
   'frost control': {
@@ -97,6 +115,15 @@ const Map<String, Map<String, List<(String, String)>>> _probePlans = {
       ('pad_e', 'ranger'),
       ('pad_f', 'frost'),
     ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'frost'),
+    ],
   },
   'no-frost control': {
     'meadow_gate': [
@@ -115,6 +142,15 @@ const Map<String, Map<String, List<(String, String)>>> _probePlans = {
       ('pad_d', 'ranger'),
       ('pad_c', 'ranger'),
     ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_g', 'ranger'),
+    ],
   },
 };
 
@@ -122,8 +158,8 @@ const Map<String, Map<String, List<(String, String)>>> _probePlans = {
 List<(String, String)> _plan(String strategy, String mapId) =>
     _probePlans[strategy]![mapId]!;
 
-/// Probe-measured outcomes for the seven levels after the opening, per
-/// strategy: `(victory, coreHealth, leaks)`.
+/// Probe-measured outcomes for the ten levels after the opening, per strategy:
+/// `(victory, coreHealth, leaks)`.
 ///
 /// These are the probe's numbers as of D57, and every one of them is supposed
 /// to change when balance data changes — deliberately, by editing this table
@@ -134,6 +170,13 @@ List<(String, String)> _plan(String strategy, String mapId) =>
 /// core and its `frost control` row 6 → 2, the two rows the relocated pads
 /// `pad_e`/`pad_f` move. Every other row of the table survived that change
 /// untouched, which is why the move could be judged rather than guessed.
+///
+/// Region 3 (V2-1) added five rows measured under the same four plans. They
+/// were tuned over several probe runs rather than written once: the first dry
+/// of the new map leaked nothing at all, which is why `hollow_03` now runs
+/// sixteen runners at half-second spacing and `hollow_05` fields two surging
+/// bosses. The D69 surge itself did not move a single ember row, which is the
+/// evidence that the mechanic costs the shipped campaign nothing.
 const Map<String, Map<String, (bool, int, int)>> _pinnedOutcomes = {
   'meadow_04': {
     'rangers only': (true, 18, 0),
@@ -176,6 +219,36 @@ const Map<String, Map<String, (bool, int, int)>> _pinnedOutcomes = {
     'cannon crossfire': (true, 12, 0),
     'frost control': (true, 12, 0),
     'no-frost control': (true, 10, 1),
+  },
+  'hollow_01': {
+    'rangers only': (true, 18, 1),
+    'cannon crossfire': (true, 20, 0),
+    'frost control': (true, 18, 1),
+    'no-frost control': (true, 18, 1),
+  },
+  'hollow_02': {
+    'rangers only': (true, 16, 2),
+    'cannon crossfire': (true, 20, 0),
+    'frost control': (true, 18, 1),
+    'no-frost control': (true, 16, 2),
+  },
+  'hollow_03': {
+    'rangers only': (true, 9, 9),
+    'cannon crossfire': (true, 20, 0),
+    'frost control': (true, 9, 9),
+    'no-frost control': (true, 20, 0),
+  },
+  'hollow_04': {
+    'rangers only': (true, 20, 0),
+    'cannon crossfire': (true, 20, 0),
+    'frost control': (true, 20, 0),
+    'no-frost control': (true, 10, 10),
+  },
+  'hollow_05': {
+    'rangers only': (true, 4, 5),
+    'cannon crossfire': (true, 14, 0),
+    'frost control': (true, 4, 5),
+    'no-frost control': (true, 4, 5),
   },
 };
 
@@ -311,6 +384,7 @@ void main() {
         const comparisons = [
           ('meadow_01', 'meadow_gate'),
           ('ember_01', 'ember_pass'),
+          ('hollow_01', 'hollow_court'),
         ];
 
         for (final (levelId, mapId) in comparisons) {

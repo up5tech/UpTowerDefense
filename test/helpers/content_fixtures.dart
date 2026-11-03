@@ -2,6 +2,7 @@ import 'package:up_tower_defense/features/campaign/domain/campaign_definition.da
 import 'package:up_tower_defense/features/gameplay/data/level_bundle.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/enemy_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/level_definition.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/speed_surge.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_level_stats.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/wave_definition.dart';
@@ -20,6 +21,24 @@ const EnemyDefinition testGrunt = EnemyDefinition(
   colorValue: 0xFFD96B5B,
 );
 
+/// A grunt that never moves, so a test can pin a geometry a moving field
+/// would blur.
+///
+/// The chain's tie-break compares squared distances for exact equality, so a
+/// drifting field can turn an intended tie into two slightly different
+/// numbers and let rounding decide the order instead of the rule. A
+/// stationary enemy keeps the measured distance exact for the whole run.
+const EnemyDefinition testStationaryGrunt = EnemyDefinition(
+  id: 'stationary_grunt',
+  displayName: 'Stationary Grunt',
+  maxHealth: 100,
+  speed: 0,
+  coreDamageOnLeak: 1,
+  rewardGold: 10,
+  radius: 14,
+  colorValue: 0xFFD96B5B,
+);
+
 /// Faster, lighter enemy so multi-group waves are meaningful in tests.
 const EnemyDefinition testRunner = EnemyDefinition(
   id: 'runner',
@@ -32,10 +51,38 @@ const EnemyDefinition testRunner = EnemyDefinition(
   colorValue: 0xFFE0A34A,
 );
 
+/// Boss fixture for the D69 speed surge: tough enough to survive the crossing of
+/// its threshold, slow enough to watch it move, and armed at half health.
+const EnemyDefinition testBoss = EnemyDefinition(
+  id: 'boss',
+  displayName: 'Warden',
+  maxHealth: 600,
+  speed: 40,
+  coreDamageOnLeak: 6,
+  rewardGold: 140,
+  radius: 24,
+  colorValue: 0xFFA45CD6,
+  isBoss: true,
+  speedSurge: SpeedSurge(
+    healthRatio: 0.5,
+    multiplier: 1.5,
+    durationSeconds: 3,
+  ),
+);
+
 /// Enemy catalog matching [testGrunt] and [testRunner].
 final EnemyCatalog testEnemyCatalog = EnemyCatalog(const [
   testGrunt,
   testRunner,
+]);
+
+/// Catalog for surge tests: the boss beside the plain grunt, so a level can be
+/// climbed with damage that is not the boss.
+final EnemyCatalog testBossCatalog = EnemyCatalog(const [testBoss, testGrunt]);
+
+/// Catalog for the chain tie-break test: one enemy type, and it never moves.
+final EnemyCatalog stationaryEnemyCatalog = EnemyCatalog(const [
+  testStationaryGrunt,
 ]);
 
 /// Ranger-like tower used by build and HUD tests.
@@ -136,12 +183,114 @@ const TowerDefinition testFrost = TowerDefinition(
   ],
 );
 
+/// Arc-like tower fixture: chain jumps with falloff behind a small blast, so
+/// the chain walk, the splash exclusion and their interaction all have one
+/// fixture to share.
+const TowerDefinition testArc = TowerDefinition(
+  id: 'arc',
+  displayName: 'Arc Tower',
+  role: 'Chain damage',
+  description: 'Shots that jump between enemies.',
+  buildCost: 95,
+  sellRefundRate: 0.6,
+  colorValue: 0xFFFFD166,
+  levels: [
+    TowerLevelStats(
+      damage: 24,
+      range: 220,
+      fireCooldownSeconds: 0.9,
+      projectileSpeed: 600,
+      splashRadius: 60,
+      chainCount: 2,
+      chainRadius: 160,
+      chainFalloff: 0.5,
+    ),
+  ],
+);
+
+/// Beacon fixture: a support level that projects range instead of shooting,
+/// with two levels so the upgrade preview has a next level to ask for.
+const TowerDefinition testBeacon = TowerDefinition(
+  id: 'beacon',
+  displayName: 'Beacon Tower',
+  role: 'Range support',
+  description: 'Widens the range of nearby towers.',
+  buildCost: 70,
+  sellRefundRate: 0.6,
+  colorValue: 0xFFE46DD4,
+  levels: [
+    TowerLevelStats(
+      damage: 0,
+      range: 300,
+      fireCooldownSeconds: 1,
+      projectileSpeed: 600,
+      auraRadius: 500,
+      auraRangeBonus: 0.2,
+      upgradeCost: 70,
+    ),
+    TowerLevelStats(
+      damage: 0,
+      range: 340,
+      fireCooldownSeconds: 1,
+      projectileSpeed: 600,
+      auraRadius: 500,
+      auraRangeBonus: 0.3,
+    ),
+  ],
+);
+
+/// Shielded fixture for the flat per-hit reduction (D73): six off every hit,
+/// comfortably below its own health so the level stays winnable.
+const EnemyDefinition testShielded = EnemyDefinition(
+  id: 'shielded',
+  displayName: 'Shielded',
+  maxHealth: 100,
+  speed: 60,
+  coreDamageOnLeak: 1,
+  rewardGold: 12,
+  radius: 14,
+  colorValue: 0xFF5C7A99,
+  flatDamageReduction: 6,
+);
+
+/// Splitter fixture: dies into two runners at its own route progress, and the
+/// runner it spawns must not itself split.
+const EnemyDefinition testSplitter = EnemyDefinition(
+  id: 'splitter',
+  displayName: 'Splitter',
+  maxHealth: 170,
+  speed: 68,
+  coreDamageOnLeak: 1,
+  rewardGold: 16,
+  radius: 15,
+  colorValue: 0xFF7BC950,
+  splitInto: SplitSpec(enemyId: 'runner', count: 2),
+);
+
 /// Tower catalog matching [testRanger].
 ///
 /// Cannon and frost stay out of the default catalog so widget tests keep a
 /// single build option; combat tests inject them explicitly and roster tests
 /// use [fullTowerCatalog].
 final TowerCatalog testTowerCatalog = TowerCatalog(const [testRanger]);
+
+/// The V2-2 mechanic roster: the ranger beside the arc, the beacon and the
+/// frost, so one session can field a support tower and the shooter it buffs —
+/// or a shield test with a hit small enough for the shield to eat.
+final TowerCatalog mechanicTowerCatalog = TowerCatalog(const [
+  testRanger,
+  testFrost,
+  testArc,
+  testBeacon,
+]);
+
+/// The V2-2 enemy fixtures: the shield, the splitter and the runner its split
+/// spawns.
+final EnemyCatalog mechanicEnemyCatalog = EnemyCatalog(const [
+  testShielded,
+  testSplitter,
+  testRunner,
+]);
 
 /// The full Phase 6 roster, ordered like the shipped catalog.
 ///

@@ -1,0 +1,26 @@
+{
+  "id": "hollow_court",
+  "displayName": "Hollow Court",
+  "world": [1280, 720],
+  "buildPadRadius": 34,
+  "route": [
+    [0, 420],
+    [300, 420],
+    [300, 640],
+    [700, 640],
+    [700, 240],
+    [1040, 240],
+    [1040, 520],
+    [1180, 520]
+  ],
+  "core": [1180, 520],
+  "buildPads": [
+    { "id": "pad_a", "label": "A", "center": [150, 300] },
+    { "id": "pad_b", "label": "B", "center": [450, 520] },
+    { "id": "pad_c", "label": "C", "center": [600, 520] },
+    { "id": "pad_d", "label": "D", "center": [610, 320] },
+    { "id": "pad_e", "label": "E", "center": [860, 400] },
+    { "id": "pad_f", "label": "F", "center": [1150, 400] },
+    { "id": "pad_g", "label": "G", "center": [1150, 640] }
+  ]
+}

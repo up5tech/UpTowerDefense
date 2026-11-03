@@ -38,7 +38,33 @@
       "coreDamageOnLeak": 6,
       "rewardGold": 140,
       "radius": 24,
-      "color": "#A45CD6"
+      "color": "#A45CD6",
+      "isBoss": true,
+      "speedSurgeHealthRatio": 0.5,
+      "speedSurgeMultiplier": 1.5,
+      "speedSurgeDurationSeconds": 3
+    },
+    {
+      "id": "bulwark",
+      "displayName": "Bulwark",
+      "maxHealth": 300,
+      "speed": 58,
+      "coreDamageOnLeak": 2,
+      "rewardGold": 26,
+      "radius": 18,
+      "color": "#5C7A99",
+      "flatDamageReduction": 6
+    },
+    {
+      "id": "splitter",
+      "displayName": "Splitter",
+      "maxHealth": 170,
+      "speed": 68,
+      "coreDamageOnLeak": 1,
+      "rewardGold": 16,
+      "radius": 15,
+      "color": "#7BC950",
+      "splitInto": { "enemyId": "runner", "count": 2 }
     }
   ]
 }

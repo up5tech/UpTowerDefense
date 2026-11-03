@@ -173,6 +173,62 @@ class LevelSession {
   /// Whether [padId] already holds a tower.
   bool isPadOccupied(String padId) => _towersByPad.containsKey(padId);
 
+  /// The stats [tower] actually fights with: its own level's numbers with the
+  /// strongest Beacon aura covering its pad folded in (D64).
+  ///
+  /// The single accessor for effective range — targeting, the drawn range
+  /// circle, the tower panel and its `Next:` upgrade preview all call this, so
+  /// a buff cannot show up in one reader and be missing from another. [level]
+  /// defaults to the tower's current level because the preview asks about the
+  /// next one, which is why the accessor answers for a level rather than only
+  /// for an instance.
+  ///
+  /// Only the strongest covering aura applies: two Beacons never compound, and
+  /// a beacon never amplifies itself, so its own circle keeps showing the
+  /// coverage it projects. Nothing is cached — the aura is derived per query,
+  /// so building, selling or upgrading a beacon can never leave a stale
+  /// multiplier behind.
+  TowerLevelStats effectiveStatsFor(TowerInstance tower, {int? level}) {
+    final stats = tower.definition.levelAt(level ?? tower.level);
+    final bonus = _auraBonusFor(tower);
+    return bonus == 0
+        ? stats
+        : stats.copyWith(range: stats.range * (1 + bonus));
+  }
+
+  /// The strongest aura covering [tower]'s pad, as the range bonus it adds;
+  /// 0 when no beacon reaches it.
+  double _auraBonusFor(TowerInstance tower) {
+    final pad = map.padById(tower.padId);
+    if (pad == null) {
+      return 0;
+    }
+    var best = 0.0;
+    for (final other in _towers) {
+      if (other.instanceId == tower.instanceId) {
+        continue;
+      }
+      final stats = other.stats;
+      if (stats.auraRadius <= 0) {
+        continue;
+      }
+      final source = map.padById(other.padId);
+      if (source == null) {
+        continue;
+      }
+      final dx = source.position.x - pad.position.x;
+      final dy = source.position.y - pad.position.y;
+      final radius = stats.auraRadius;
+      if (dx * dx + dy * dy > radius * radius) {
+        continue;
+      }
+      if (stats.auraRangeBonus > best) {
+        best = stats.auraRangeBonus;
+      }
+    }
+    return best;
+  }
+
   /// Whether the current wave still has enemies to spawn or on the field.
   bool get isWaveActive => _spawnQueue.isNotEmpty || _enemies.isNotEmpty;
 
@@ -510,7 +566,42 @@ class LevelSession {
     gold += enemy.definition.rewardGold;
     goldEarned += enemy.definition.rewardGold;
     _events.add(LevelEvent(LevelEventKind.defeated, position));
+    _spawnSplitChildren(enemy);
     _evaluateWaveCompletion();
+  }
+
+  /// Spawns a splitter's children at its route progress, before the wave is
+  /// allowed to complete.
+  ///
+  /// Combat resolves inside `_combatStep`, which runs after the frame's
+  /// movement pass, so the children join the field with that pass already
+  /// behind them: they start exactly where their parent stood and skip this
+  /// frame's movement, the same rule a mid-frame spawn follows. Each child is
+  /// an ordinary `EnemyState`, so it leaves the field through the single
+  /// resolution path exactly once, and the parent's reward has already been
+  /// paid above — only the parent pays.
+  void _spawnSplitChildren(EnemyState enemy) {
+    final split = enemy.definition.splitInto;
+    if (split == null) {
+      return;
+    }
+    // Content validation rejects a dangling id before a session exists; the
+    // guard keeps hand-built sessions (developer tooling, tests) from
+    // spawning a child that has no definition.
+    final child = enemyCatalog[split.enemyId];
+    if (child == null) {
+      return;
+    }
+    for (var index = 0; index < split.count; index++) {
+      _addEnemy(
+        EnemyState(
+          instanceId: _nextInstanceId,
+          definition: child,
+          distanceAlongRoute: enemy.distanceAlongRoute,
+        ),
+      );
+      _nextInstanceId += 1;
+    }
   }
 
   /// Advances targeting, cooldowns and every shot in flight by [dt].
@@ -524,6 +615,11 @@ class LevelSession {
       if (_phase != LevelPhase.playing) {
         return;
       }
+      // A level that deals no damage is the aura: it projects a buff instead
+      // of shooting, so it neither looks for a target nor spends a cooldown.
+      if (tower.stats.damage <= 0) {
+        continue;
+      }
       tower.cooldownRemaining = math.max(0, tower.cooldownRemaining - dt);
       if (tower.cooldownRemaining > _cooldownEpsilon) {
         continue;
@@ -536,7 +632,9 @@ class LevelSession {
       final target = _targeting.acquire(
         geometry: geometry,
         origin: pad.position,
-        range: tower.stats.range,
+        // The effective range, not the instance's own: a beacon-widened tower
+        // must reach what its drawn circle shows (D64).
+        range: effectiveStatsFor(tower).range,
         enemies: _enemies,
         policy: tower.targetingPolicy,
       );
@@ -578,6 +676,11 @@ class LevelSession {
         damage: stats.damage,
         splashRadius: stats.splashRadius,
         slow: stats.slow,
+        // Copied at fire time like the slow, so an upgrade mid-flight cannot
+        // change how far an arc already in the air will jump.
+        chainCount: stats.chainCount,
+        chainRadius: stats.chainRadius,
+        chainFalloff: stats.chainFalloff,
         colorValue: tower.definition.colorValue,
       ),
     );
@@ -632,9 +735,21 @@ class LevelSession {
     // path, so direct shots, splash and future effects can never disagree —
     // and an expired chill stops amplifying without any extra bookkeeping.
     final amp = enemy.isSlowed ? enemy.slowDamageAmp : 0.0;
-    final total = damage * (1 + amp);
+    // A flat shield is subtracted after the amplifier and floored at zero: a
+    // hit it fully absorbs removes nothing — it never heals the enemy — while
+    // the chill's percentage still pays for getting through, so one rule can
+    // favour neither the shield nor the amplifier by construction (D73).
+    final total = math.max(
+      0,
+      damage * (1 + amp) - enemy.definition.flatDamageReduction,
+    );
     enemy.health = math.max(0, enemy.health - total);
     if (enemy.health > 0) {
+      // A boss turns here, on the hit that drops it to the threshold, and only
+      // for a hit it survives: a lethal blow never starts a surge nobody sees.
+      // Routed through the single damage path so direct shots, splash and any
+      // later source arm it identically (D69).
+      enemy.tryStartSpeedSurge();
       return;
     }
     reportEnemyDefeated(enemy);
@@ -703,6 +818,82 @@ class LevelSession {
         break;
       }
     }
+
+    _resolveChain(projectile, victims);
+  }
+
+  /// Arcs a chained shot onward from where it landed: up to `chainCount`
+  /// further victims, each jumped to from the previous one's position.
+  ///
+  /// Everyone the shot already hurt — the primary target and anyone the
+  /// splash caught — is excluded for the whole chain, so one shot can never
+  /// damage the same enemy twice however far it jumps; that rule is what lets
+  /// splash and chain coexist on a single projectile. The next victim is the
+  /// nearest enemy inside the jump radius with the lower instance id breaking
+  /// a tie, so the order is a function of the field alone: a replay and a test
+  /// walk the same chain at any frame rate.
+  void _resolveChain(ProjectileState projectile, List<EnemyState> alreadyHit) {
+    if (projectile.chainCount <= 0) {
+      return;
+    }
+    final hit = <EnemyState>{for (final victim in alreadyHit) victim};
+    var origin = projectile.destination;
+    var damage = projectile.damage;
+
+    for (var jump = 0; jump < projectile.chainCount; jump++) {
+      if (_phase != LevelPhase.playing) {
+        return;
+      }
+      damage *= projectile.chainFalloff;
+      final victim = _nearestChainVictim(origin, projectile.chainRadius, hit);
+      if (victim == null) {
+        // No one left in reach: the chain simply ends where it was.
+        return;
+      }
+      hit.add(victim);
+      final position = geometry.pointAtDistance(victim.distanceAlongRoute);
+      // A plain hit fact with no blast: the effect layer draws its flash from
+      // the kind, and the damage radius is the jump's own, not a blast ring.
+      _events.add(LevelEvent(LevelEventKind.hit, position));
+      _applyDamage(victim, damage);
+      origin = position;
+    }
+  }
+
+  /// The chain's next victim: the nearest active enemy within [radius] of
+  /// [origin] that this shot has not already hurt, ties by lower instance id.
+  ///
+  /// Squared distances avoid the square root, and comparing them directly
+  /// keeps the choice exact rather than epsilon-dependent — two candidates at
+  /// the same distance are ordered by id, never by list position.
+  EnemyState? _nearestChainVictim(
+    WorldPoint origin,
+    double radius,
+    Set<EnemyState> alreadyHit,
+  ) {
+    EnemyState? best;
+    var bestDistance = double.infinity;
+    final radiusSquared = radius * radius;
+    for (final enemy in _enemies) {
+      if (alreadyHit.contains(enemy)) {
+        continue;
+      }
+      final position = geometry.pointAtDistance(enemy.distanceAlongRoute);
+      final dx = position.x - origin.x;
+      final dy = position.y - origin.y;
+      final distanceSquared = dx * dx + dy * dy;
+      if (distanceSquared > radiusSquared) {
+        continue;
+      }
+      if (distanceSquared < bestDistance ||
+          (distanceSquared == bestDistance &&
+              best != null &&
+              enemy.instanceId < best.instanceId)) {
+        best = enemy;
+        bestDistance = distanceSquared;
+      }
+    }
+    return best;
   }
 
   /// Applies a slow with the strongest-wins refresh rule.
@@ -744,9 +935,17 @@ class LevelSession {
 
   void _advanceEnemy(EnemyState enemy, double dt) {
     // Status effects expire in simulation time, so pause and game speed move
-    // them together with everything else.
+    // them together with everything else. The boss surge is a timed effect like
+    // the chill: wall-clock time never touches it, and a surge started inside a
+    // frame is spent by the same `dt` every other rule uses.
     if (enemy.slowRemainingSeconds > 0) {
       enemy.slowRemainingSeconds = math.max(0, enemy.slowRemainingSeconds - dt);
+    }
+    if (enemy.surgeRemainingSeconds > 0) {
+      enemy.surgeRemainingSeconds = math.max(
+        0,
+        enemy.surgeRemainingSeconds - dt,
+      );
     }
 
     final routeLength = geometry.routeLength;

@@ -68,6 +68,15 @@ const Map<String, Map<String, List<(String, String)>>> _strategies = {
       ('pad_e', 'ranger'),
       ('pad_f', 'ranger'),
     ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'ranger'),
+    ],
   },
   'cannon crossfire': {
     'meadow_gate': [
@@ -85,6 +94,15 @@ const Map<String, Map<String, List<(String, String)>>> _strategies = {
       ('pad_d', 'ranger'),
       ('pad_e', 'ranger'),
       ('pad_f', 'ranger'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'cannon'),
+      ('pad_e', 'cannon'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'ranger'),
     ],
   },
   // Frost is built *last*, after every damage tower is up: the realistic
@@ -109,6 +127,15 @@ const Map<String, Map<String, List<(String, String)>>> _strategies = {
       ('pad_e', 'ranger'),
       ('pad_f', 'frost'),
     ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'frost'),
+    ],
   },
   // Entry-zone pads first, every slot a ranger. Kept after `frost control`
   // moved to a late-frost build (whose matched control is now `rangers only`,
@@ -132,6 +159,15 @@ const Map<String, Map<String, List<(String, String)>>> _strategies = {
       ('pad_b', 'ranger'),
       ('pad_d', 'ranger'),
       ('pad_c', 'ranger'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_g', 'ranger'),
     ],
   },
 };

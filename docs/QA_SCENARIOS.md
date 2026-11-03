@@ -15,8 +15,8 @@ on real hardware.
 
 **V2-0 baseline run (2026-10-29):** Flutter 3.47.8 / Dart 3.13.7, Flame
 1.38.2, macOS arm64 test host. These are harness wall-clock timings, not
-release-mode device frame times; the device-only graphics and memory profile
-below is still outstanding.
+release-mode device frame times; the device-only graphics profile stays open for
+the V2-6 hardware pass, and memory was measured on the emulator in §9.
 
 | Scenario | Configuration | Average | p95 | Worst | Result |
 |---|---|---:|---:|---:|---|
@@ -66,7 +66,7 @@ a level in progress at ~50% wave.
 
 | # | Steps | Expected |
 |---|---|---|
-| I1 | During gameplay, press Home (background the app), wait 10 s, return. | Game is paused on return; the pause overlay is shown or the level is visibly frozen; tapping resume continues from the exact frame — no enemies skipped, no wave delivered at once (frame deltas clamp). |
+| I1 | During gameplay, press Home (background the app), wait 10 s, return. | The level is frozen while backgrounded and continues from the exact frame on return — no enemies skipped, no wave delivered at once (frame deltas clamp). System return resumes the level by design (D30); a pause the player chose is the case I2 covers, and it must survive. |
 | I2 | Pause the level explicitly, background the app, return. | The level is **still paused** — system resume must not override the player's pause. |
 | I3 | Background the app from a menu screen, wait, return. | Menu state intact; orientation still correct. |
 | I4 | During gameplay, trigger an incoming call / another app's full-screen interruption, dismiss it, return. | Same as I1: no lost progress, no double wave, no crash. |
@@ -144,7 +144,64 @@ On-device half (point the profiler at the same shape of load):
 | S2 | Same run, watch memory over 60 s. | No unbounded growth: event queues drain every frame and components are reused, so the graph is flat, not climbing. |
 | S3 | Repeat S1 at 2× game speed. | Frame pacing holds; effects scale with the same time source as the simulation. The host-side timings above are not a substitute for this device frame-pacing check. |
 
-## 9. Known issues
+## 9. Run record — V2-0 device pass (2026-11-02)
+
+This is the pass V2-0's exit gate requires. Everything below ran against one
+build; the scenarios that this host cannot produce are listed separately with
+the reason and the automation that covers them instead.
+
+| | |
+|---|---|
+| Device | Android emulator AVD `Medium_Phone_API_35` — Android 15 (API 35), 1080×2400, `-gpu swiftshader_indirect` |
+| Build | `flutter build apk --release` from `e870fe2` (55.9 MB). Debug-signed because `android/key.properties` is absent, so the **release** manifest is what ran |
+| Install | `adb install -r` onto a fresh profile |
+| Automated half | `flutter analyze` clean · `dart format --set-exit-if-changed` 0 changed · `flutter test` 450 passing · `tool/validate_content.dart` Content OK (2 maps, 4 enemies, 3 towers, 10 levels, 2 regions) |
+| Input | `adb shell input tap/keyevent`; captures kept in the gitignored `build/qa_shots/` |
+| Haptics evidence | `adb shell dumpsys vibrator_manager`, filtered to `com.uptowerdefense.game` |
+| Audio evidence | `adb shell dumpsys audio`, filtered to the app uid |
+| Network | Airplane mode on for every scenario except O5 |
+
+| # | Result | Evidence |
+|---|---|---|
+| O1 | Pass | Cold launch in airplane mode reached the menu with no dialog, hang or error. |
+| O2 | Pass | `meadow_01` played menu → level → 3/3 waves → victory offline: "All waves cleared / Unlocked: Two Roads / 2 stars". |
+| O3 | Pass | Force-kill after the win, relaunch still offline: "1 of 10 levels cleared · 2 of 30 stars", and the unlocked level started normally. |
+| O4 | Pass | Music off, SFX 50%, haptics on, reduced motion on all survived a force-kill exactly. |
+| O5 | Pass | Airplane mode off, replay of `meadow_03`: identical behaviour, no error. The release package declares no `INTERNET` permission at all, so connectivity cannot reach a code path. |
+| O6 | Pass | `dumpsys package` lists only AndroidX's `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` signature permission. |
+| I1 | Pass | Backgrounded at wave 2/3 for 10 s: the level was still frozen on return, then continued from that exact frame — no skipped enemies, no wave dumped at once. |
+| I2 | Pass | Player pause plus 12 s in the background: still paused on return, gold/core/wave identical (120 g, 18/20, 3/3). |
+| I3 | Pass | Home from the menu, 10 s away, return: same process (pid unchanged), same menu, portrait layout intact. |
+| I5 | Pass | Screen off for 20 s mid-wave: no time jump, no enemy teleported past a tower, no extra leaks. |
+| I6 | Pass | Three background/return cycles in quick succession: consistent state, no accumulated pause, no leaked timer. |
+| R1 | Pass | Portrait menu re-laid out without clipping; landscape and reverse-landscape menu and settings render fully. |
+| R2 | Pass | Gameplay stayed landscape with `user_rotation` forced to 0. |
+| R3 | Pass | Leaving gameplay released the lock immediately — the menu rotated to portrait. |
+| R4 | Pass | Three enter/leave cycles: the lock applied and released every time. |
+| P1 | Pass | Win → force-kill → relaunch: victory and unlock present (same evidence as O3). |
+| P2 | Pass | Settings changes survived a force-kill (same evidence as O4). |
+| P3 | Pass | Force-kill mid-level: clean menu on relaunch, the attempt dropped, every recorded win kept, no crash. |
+| P4 | Pass | Killed the process on the victory panel before touching anything: relaunch showed "2 of 10 levels cleared · 4 of 30 stars" — the win is written when the level ends, not when the player taps on. |
+| P6 | Pass | Five force-stop/relaunch cycles: menu counters, providers and audio identical each time. |
+| A2 | Partial | Exactly one `MediaPlayer` at all times; toggling music off then on replaced it (`paused` → `idle`) instead of adding a second player, so no overlapping loop. Audibility is not measurable here. |
+| A3 | Partial | SFX run through one pooled `SoundPool`; no audio errors in logcat with SFX toggled. Audibility is not measurable here. |
+| A5 | Pass | Haptics on: build and upgrade each logged one `performHapticFeedback(constant=4)` (TEXTURE_TICK, ~105 ms). Six core leaks logged a distinct, longer effect (`constant=6`, 247 ms) and routine combat logged nothing. Haptics off: the entry count did not move across builds and upgrades. |
+| M1 | Pass | Ten restarts: each began at 170 g, wave 0/3, core 20/20, no towers, clean HUD. |
+| M2 | Partial | Ten menu↔level cycles opened a working level each time with no stray sprites or residue in the captures; the exact component-count assertion belongs to `restart_navigation_leak_test`, not to a screenshot. |
+| M3 | Pass | PSS 95,283 KB → 104,639 KB (after 10 restarts) → 105,242 KB (after 10 menu↔level cycles) → 104,980 KB (5 more cycles): a one-time warm-up, then flat. |
+
+### Not produced on this host
+
+| # | Why | Covered instead by |
+|---|---|---|
+| I4 | An emulator has no call UI to interrupt with. | The same lifecycle path as I1 and I5, both of which passed. |
+| P5 | The release APK is not debuggable and `adb root` is refused on this image ("production builds"), so the save bytes cannot be edited on the device. | `save_repository_test`'s "recovery" group: an unreadable save restores the backup, preserves the damaged payload and reports the load degraded; defaults when nothing is usable; a load never writes. |
+| A1, A4 | No monitored audio output and no Bluetooth or headphone routing on this AVD. | The music controller/host tests pin the loop's pause, resume and toggle rules; the `dumpsys audio` check above pins single-player behaviour. |
+| M4 | Needs three complete levels in one session with frame pacing observable. | `restart_navigation_leak_test` plus M1–M3. |
+| S1–S3 | The AVD rasterises in software, so its frame times say nothing about a phone GPU. | Nothing on this host — this is the explicit V2-6 hardware item. |
+| Haptic feel, battery, thermals | Platform proxies only; the measurement itself needs hardware. | The `dumpsys vibrator_manager` and `meminfo` evidence above. |
+
+## 10. Known issues
 
 Record every non-blocking defect found by this pass here, with severity and the
 build it was found on. Phase 12's acceptance criterion is that **no blocker or
@@ -152,14 +209,24 @@ data-loss defect remains** — a known issue may ship only if it is neither.
 
 | Severity | Scenario | Description | Build | Status |
 |----------|----------|-------------|-------|--------|
+| Low | A1–A4 | Music and SFX audibility is unverified: this host neither monitors the emulator's audio output nor has a Bluetooth route, so only player lifecycle (`dumpsys audio`) was measurable. | `e870fe2` release, 2026-11-02 | Open — verify on hardware in the V2-6 pass |
+| Low | O1 | On Android 12+ the system splash paints white instead of the palette `#0D1117`: `values/styles.xml` sets a `windowBackground` *drawable*, which the platform's splash screen cannot use, and no `values-v31` theme sets `windowSplashScreenBackground`. One white flash before the first Flutter frame. | `e870fe2` release, 2026-11-02 | Open — cosmetic |
 
-## 10. Sign-off checklist
+## 11. Sign-off checklist
 
-- [ ] `flutter analyze`, `dart format`, `flutter test` all clean on the RC build
-- [ ] `tool/validate_content.dart` passes
-- [ ] Both stress tests pass; simulation and effects distributions recorded
-- [ ] `restart_navigation_leak_test` passes (automated half of Section 7)
-- [ ] Sections 2–8 executed on at least one device; results table filled in
-- [ ] Offline pass (Section 2) completed with network disabled end to end
-- [ ] Known Issues reviewed: no blocker, no data-loss defect
-- [ ] High-severity findings fixed and re-verified before Phase 13 begins
+Ticked against the 2026-11-02 run (§9) unless a note says otherwise.
+
+- [x] `flutter analyze`, `dart format`, `flutter test` all clean on the RC build
+- [x] `tool/validate_content.dart` passes
+- [x] Both stress tests pass; simulation and effects distributions recorded
+- [x] `restart_navigation_leak_test` passes (automated half of Section 7)
+- [x] Sections 2–7 executed on a device, with Section 8's on-device half
+  explicitly deferred to the V2-6 hardware pass (§9, "Not produced on this host")
+- [x] Offline pass (Section 2) completed with network disabled end to end
+- [x] Known Issues reviewed: no blocker, no data-loss defect — two low-severity
+  items are open (audio audibility unverified, Android 12+ splash colour)
+- [x] High-severity findings fixed and re-verified before Phase 13 begins — none
+  were found
+
+Not yet satisfiable on this host: everything in §9 "Not produced on this host".
+They are the V2-6 hardware pass's input, not a Phase 12 regression.

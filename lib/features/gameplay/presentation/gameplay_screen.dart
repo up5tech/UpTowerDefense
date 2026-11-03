@@ -1136,6 +1136,7 @@ class _PadPanelState extends State<_PadPanel> {
                     _TowerDetails(
                       padId: pad.id,
                       tower: tower,
+                      session: widget.session,
                       gold: widget.gold,
                       onUpgrade: widget.onUpgrade,
                       onSell: widget.onSell,
@@ -1276,6 +1277,7 @@ class _TowerDetails extends StatelessWidget {
   const _TowerDetails({
     required this.padId,
     required this.tower,
+    required this.session,
     required this.gold,
     required this.onUpgrade,
     required this.onSell,
@@ -1284,6 +1286,12 @@ class _TowerDetails extends StatelessWidget {
 
   final String padId;
   final TowerInstance tower;
+
+  /// The level this tower is standing in, so every number below can be the
+  /// session's effective stats rather than the instance's raw ones — a tower
+  /// under a Beacon's aura must show the reach it really has (D64).
+  final LevelSession session;
+
   final int gold;
   final VoidCallback onUpgrade;
   final VoidCallback onSell;
@@ -1293,7 +1301,7 @@ class _TowerDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final definition = tower.definition;
-    final stats = tower.stats;
+    final stats = session.effectiveStatsFor(tower);
     final refund = definition.refundForInvested(tower.investedGold);
     final upgradeCost = tower.nextUpgradeCost;
     final affordable = tower.isUpgradeAffordableWith(gold);
@@ -1331,13 +1339,17 @@ class _TowerDetails extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _StatChip(label: 'Damage ${_formatStat(stats.damage)}'),
+              if (stats.damage > 0)
+                _StatChip(label: 'Damage ${_formatStat(stats.damage)}'),
               _StatChip(label: 'Range ${_formatStat(stats.range)}'),
               _StatChip(
                 label: 'Fire ${_formatStat(stats.fireCooldownSeconds)}s',
               ),
               if (stats.splashRadius > 0)
                 _StatChip(label: 'Blast ${_formatStat(stats.splashRadius)}'),
+              if (stats.chainCount > 0)
+                _StatChip(label: 'Chain ×${stats.chainCount}'),
+              if (stats.auraRadius > 0) _StatChip(label: _auraLabel(stats)),
               if (slow != null) _StatChip(label: _slowLabel(slow)),
             ],
           ),
@@ -1351,7 +1363,9 @@ class _TowerDetails extends StatelessWidget {
             )
           else ...[
             Text(
-              _nextLevelSummary(definition.levelAt(tower.level + 1)),
+              _nextLevelSummary(
+                session.effectiveStatsFor(tower, level: tower.level + 1),
+              ),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -1455,6 +1469,13 @@ String _formatStat(double value) {
       : value.toStringAsFixed(1);
 }
 
+/// The aura chip: the bonus and the radius that delivers it, both from the
+/// level's own fields, so a stronger beacon reads as an upgrade here.
+String _auraLabel(TowerLevelStats stats) {
+  final percent = (stats.auraRangeBonus * 100).round();
+  return 'Aura +$percent% range / ${_formatStat(stats.auraRadius)}';
+}
+
 /// The slow chip: magnitude and duration together.
 ///
 /// Duration is part of the effect, so a level that slows just as hard but for
@@ -1484,6 +1505,12 @@ String _nextLevelSummary(TowerLevelStats next) {
       'slow ${(slow.magnitude * 100).round()}% / '
       '${_formatStat(slow.durationSeconds)}s',
     );
+  }
+  if (next.chainCount > 0) {
+    parts.add('chain ×${next.chainCount}');
+  }
+  if (next.auraRadius > 0) {
+    parts.add('aura +${(next.auraRangeBonus * 100).round()}%');
   }
   return 'Next: ${parts.join(' · ')}';
 }

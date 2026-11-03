@@ -21,6 +21,17 @@
         { "id": "ember_04", "displayName": "Furnace" },
         { "id": "ember_05", "displayName": "The Warden" }
       ]
+    },
+    {
+      "id": "hollow",
+      "displayName": "Hollow Court",
+      "levels": [
+        { "id": "hollow_01", "displayName": "Courtyard" },
+        { "id": "hollow_02", "displayName": "Crossfire" },
+        { "id": "hollow_03", "displayName": "The Long Watch" },
+        { "id": "hollow_04", "displayName": "Half Turn" },
+        { "id": "hollow_05", "displayName": "Warden's Court" }
+      ]
     }
   ]
 }

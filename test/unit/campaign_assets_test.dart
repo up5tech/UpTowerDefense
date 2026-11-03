@@ -160,7 +160,7 @@ void main() {
     }
   });
 
-  test('the enemy roster covers the region two threats and a boss', () {
+  test('the enemy roster covers the threats every level leans on', () {
     final referenced = <String>{
       for (final bundle in bundles.values)
         for (final wave in bundle.level.waves)
@@ -168,25 +168,53 @@ void main() {
     };
 
     expect(referenced, containsAll(['grunt', 'runner', 'brute', 'boss']));
+  });
 
-    // The boss must be the finale, not an early surprise.
+  test('the boss is never an ambush, and the campaign ends on one', () {
+    bool fieldsBoss(String levelId) => bundles[levelId]!.level.waves.any(
+      (wave) => wave.groups.any((group) => group.enemyId == 'boss'),
+    );
+
+    // The finale is the boss level: the campaign has to end on its escalation.
     final finale = campaign.levelIds.last;
     expect(
-      bundles[finale]!.level.waves.any(
-        (wave) => wave.groups.any((group) => group.enemyId == 'boss'),
-      ),
+      fieldsBoss(finale),
       isTrue,
       reason: 'the last campaign level should be the boss level',
     );
-    for (final levelId in campaign.levelIds.take(campaign.levelCount - 1)) {
+
+    // Region 3 teaches the D69 speed surge before the finale relies on it, so a
+    // boss may appear more than once — but never as a surprise. Two rules keep
+    // that honest: the first region stays boss-free (a new player is still
+    // learning what a wave is), and no region opens with one, because a boss on
+    // arrival reads as a wall rather than as an escalation.
+    final firstRegion = campaign.regions.first;
+    for (final level in firstRegion.levels) {
       expect(
-        bundles[levelId]!.level.waves.any(
-          (wave) => wave.groups.any((group) => group.enemyId == 'boss'),
-        ),
+        fieldsBoss(level.id),
         isFalse,
-        reason: '$levelId should not field the boss before the finale',
+        reason: '${level.id} is in the first region and must not field a boss',
       );
     }
+    for (final region in campaign.regions) {
+      final opening = region.levels.first;
+      expect(
+        fieldsBoss(opening.id),
+        isFalse,
+        reason: '${region.id} opens with a boss',
+      );
+    }
+
+    // The teaching appearance sits directly before the finale: the player meets
+    // the surge on its own, then meets it again with the rest of the finale.
+    final penultimate = campaign.levelIds[campaign.levelCount - 2];
+    expect(
+      fieldsBoss(penultimate),
+      isTrue,
+      reason:
+          '$penultimate should introduce the surging boss before $finale '
+          'requires it (V2-1)',
+    );
   });
 
   test('Play opens the first campaign level and then the next one', () async {

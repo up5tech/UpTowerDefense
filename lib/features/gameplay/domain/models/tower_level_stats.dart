@@ -54,12 +54,25 @@ class TowerLevelStats {
     this.splashRadius = 0,
     this.slow,
     this.upgradeCost,
+    this.chainCount = 0,
+    this.chainRadius = 0,
+    this.chainFalloff = 1,
+    this.auraRadius = 0,
+    this.auraRangeBonus = 0,
   });
+
+  /// Sentinel for [copyWith]: a plain `null` argument would otherwise be
+  /// indistinguishable from "keep the field I already have".
+  static const Object _keep = Object();
 
   /// Damage per hit; splash applies the same value with no falloff.
   final double damage;
 
   /// Attack radius in world units, measured from the pad centre.
+  ///
+  /// This is the tower's own reach. The reach it *fights* with may be larger
+  /// when a Beacon's aura covers the pad — `LevelSession.effectiveStatsFor`
+  /// folds that in, and every reader of range goes through it (D64).
   final double range;
 
   /// Simulation-time gap between two shots, in seconds.
@@ -76,6 +89,68 @@ class TowerLevelStats {
 
   /// Gold cost to reach the level after this one; null on the max level.
   final int? upgradeCost;
+
+  /// Number of enemies one shot arcs to after its primary hit; 0 = no chain.
+  ///
+  /// Each jump lands `chainFalloff` times further from the previous victim's
+  /// damage, so a chain is worth something against a crowd and almost nothing
+  /// against a lone target — the trade the Arc tower is built around.
+  final int chainCount;
+
+  /// Jump radius in world units: the farthest a chain may leap from the
+  /// victim it is jumping *from*. Unused while [chainCount] is 0.
+  final double chainRadius;
+
+  /// Damage multiplier applied per jump, in (0, 1]. Unused while [chainCount]
+  /// is 0. The n-th jump deals `damage × chainFalloffⁿ`.
+  final double chainFalloff;
+
+  /// Aura radius in world units, measured from the beacon's pad centre; 0 = no
+  /// aura. Towers whose pad centre falls inside it fight with a widened range.
+  final double auraRadius;
+
+  /// Fraction of range the aura adds, in (0, 1); 0 = no aura. Effective range
+  /// is `range × (1 + bonus)` with the *strongest* covering aura only, so two
+  /// beacons never compound (D64).
+  final double auraRangeBonus;
+
+  /// Returns these stats with the given fields replaced.
+  ///
+  /// Added for the aura: a buffed range is a derived value that must never be
+  /// written back into a shared definition, so the reader gets a copy instead
+  /// (D64). [slow] and [upgradeCost] are nullable, so they take [_keep] (the
+  /// default) to mean "unchanged" and a literal `null` to clear.
+  TowerLevelStats copyWith({
+    double? damage,
+    double? range,
+    double? fireCooldownSeconds,
+    double? projectileSpeed,
+    double? splashRadius,
+    Object? slow = _keep,
+    Object? upgradeCost = _keep,
+    int? chainCount,
+    double? chainRadius,
+    double? chainFalloff,
+    double? auraRadius,
+    double? auraRangeBonus,
+  }) {
+    return TowerLevelStats(
+      damage: damage ?? this.damage,
+      range: range ?? this.range,
+      fireCooldownSeconds: fireCooldownSeconds ?? this.fireCooldownSeconds,
+      projectileSpeed: projectileSpeed ?? this.projectileSpeed,
+      splashRadius: splashRadius ?? this.splashRadius,
+      slow: identical(slow, _keep) ? this.slow : slow as SlowSpec?,
+      upgradeCost: identical(upgradeCost, _keep)
+          ? this.upgradeCost
+          : upgradeCost as int?,
+      chainCount: chainCount ?? this.chainCount,
+      chainRadius: chainRadius ?? this.chainRadius,
+      chainFalloff: chainFalloff ?? this.chainFalloff,
+      auraRadius: auraRadius ?? this.auraRadius,
+      auraRangeBonus: auraRangeBonus ?? this.auraRangeBonus,
+    );
+  }
 
   @override
   String toString() =>

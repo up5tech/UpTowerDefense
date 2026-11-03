@@ -13,7 +13,7 @@ with the code, the code is wrong — fix it, or fix this file in the same change
 | Shell | Riverpod 3.4.3 · go_router 18.1.1 · shared_preferences 2.5.6 |
 | App ID | `com.uptowerdefense.game` |
 | Orientation | Landscape gameplay; menus adapt to portrait and landscape |
-| Phase status | **Phases 0–11 complete; Phase 12 automated half done; Phase 13 (release prep) in progress; V2-0 in progress** — Phase 12 added the QA scenario doc, restart/navigation leak tests, paired stress frame-cost tests (simulation + effects) and a splash broad-phase optimization; its manual device pass is still outstanding. Phase 13 so far: release signing via `android/key.properties`, launcher icons, dark splash, store listing + release checklist docs, package-licence audit and a repository-level save-upgrade test; release APK and iOS simulator builds verified. Haptics are wired for builds, upgrades and leaks (D71). V2-0 updated the toolchain to Flutter 3.47.8 / Dart 3.13.7 and refreshed host-side performance baselines; physical-device QA and graphics/memory profiling remain outstanding. Signed store uploads and the iOS archive/TestFlight path still need developer accounts. |
+| Phase status | **Phases 0–11 complete; Phase 12 complete; Phase 13 (release prep) in progress; V2-0 and V2-1 complete** — Phase 12 added the QA scenario doc, restart/navigation leak tests, paired stress frame-cost tests (simulation + effects) and a splash broad-phase optimization; its device pass is now recorded in `docs/QA_SCENARIOS.md` §9. Phase 13 so far: release signing via `android/key.properties`, launcher icons, dark splash, store listing + release checklist docs, package-licence audit and a repository-level save-upgrade test; release APK and iOS simulator builds verified. Haptics are wired for builds, upgrades and leaks (D71). V2-0 updated the toolchain to Flutter 3.47.8 / Dart 3.13.7, refreshed the host-side performance baselines and ran the Phase 12 scenarios against the release APK on an Android 15 emulator; audio audibility and release-mode GPU/memory profiling are deferred to the V2-6 hardware pass. V2-1 added Region 3 (`hollow_court`, `hollow_01`–`hollow_05`) and the D69 boss speed surge, with the probe at 15/15 levels under all four strategies. Signed store uploads and the iOS archive/TestFlight path still need developer accounts. |
 
 ---
 
@@ -97,11 +97,15 @@ test.
   option for a pad that was just filled.
 - **Refusals are typed, not logged.** Return a reason (`TowerBuildBlocker`) so the
   UI can explain a disabled option and tests can assert the exact rule.
-- **Stats come from the instance, never the definition's base level.** Cooldowns,
-  the range check, the drawn range circle and the panel all read
-  `TowerInstance.stats`; reading `definition.baseStats` in any one of them makes
-  an upgrade cosmetic in that place only, which is the hardest kind of bug to
-  notice.
+- **Stats come from the session's effective stats, derived from the instance,
+  never the definition's base level.** Range — the stat a Beacon's aura
+  changes — is read through `LevelSession.effectiveStatsFor(tower)` in the
+  targeting check, the drawn range circle, the tower panel and its `Next:`
+  preview, so a buff cannot show up in one reader and be missing from another
+  (D64); cooldowns and damage read `TowerInstance.stats`, which that accessor
+  itself derives from. Reading `definition.baseStats` in any one of them makes
+  an upgrade (or an aura) cosmetic in that place only, which is the hardest
+  kind of bug to notice.
 - **Waves never overlap.** The next wave is available only when no wave is
   active and no wave remains.
 - **Phase changes go through the transition table.** `LevelSession._enterPhase`

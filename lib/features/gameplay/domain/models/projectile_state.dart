@@ -19,6 +19,9 @@ class ProjectileState {
     required this.damage,
     required this.splashRadius,
     required this.slow,
+    required this.chainCount,
+    required this.chainRadius,
+    required this.chainFalloff,
     required this.colorValue,
   });
 
@@ -55,6 +58,18 @@ class ProjectileState {
   /// Copied at fire time so an upgrade mid-flight cannot change a shot that
   /// the player already committed.
   final SlowSpec? slow;
+
+  /// How far this shot arcs after its primary hit, copied at fire time like
+  /// the slow: 0 jumps means a plain shot, and an upgrade mid-flight cannot
+  /// extend a chain the player already committed to.
+  final int chainCount;
+
+  /// Jump radius in world units for each arc; see [chainCount].
+  final double chainRadius;
+
+  /// Damage multiplier applied per jump; the n-th jump deals
+  /// `damage × chainFalloffⁿ`.
+  final double chainFalloff;
 
   /// Body colour as 0xAARRGGBB, copied at fire time so the renderer needs no
   /// tower lookup to draw the shot.

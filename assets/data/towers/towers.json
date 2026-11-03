@@ -41,6 +41,34 @@
         { "damage": 52, "range": 215, "fireCooldownSeconds": 1.5, "projectileSpeed": 380, "splashRadius": 148, "upgradeCost": 140 },
         { "damage": 78, "range": 230, "fireCooldownSeconds": 1.4, "projectileSpeed": 380, "splashRadius": 156 }
       ]
+    },
+    {
+      "id": "arc",
+      "displayName": "Arc Tower",
+      "role": "Chain damage",
+      "description": "Shots leap between clustered enemies for decaying damage.",
+      "buildCost": 95,
+      "sellRefundRate": 0.6,
+      "color": "#FFD166",
+      "levels": [
+        { "damage": 24, "range": 205, "fireCooldownSeconds": 0.9, "projectileSpeed": 520, "chainCount": 2, "chainRadius": 130, "chainFalloff": 0.6, "upgradeCost": 75 },
+        { "damage": 34, "range": 220, "fireCooldownSeconds": 0.85, "projectileSpeed": 520, "chainCount": 3, "chainRadius": 140, "chainFalloff": 0.65, "upgradeCost": 115 },
+        { "damage": 50, "range": 235, "fireCooldownSeconds": 0.8, "projectileSpeed": 520, "chainCount": 3, "chainRadius": 155, "chainFalloff": 0.7 }
+      ]
+    },
+    {
+      "id": "beacon",
+      "displayName": "Beacon Tower",
+      "role": "Range aura",
+      "description": "Projects no attack; towers in radius fight with more range.",
+      "buildCost": 70,
+      "sellRefundRate": 0.6,
+      "color": "#E46DD4",
+      "levels": [
+        { "damage": 0, "range": 280, "fireCooldownSeconds": 1, "projectileSpeed": 520, "auraRadius": 280, "auraRangeBonus": 0.2, "upgradeCost": 70 },
+        { "damage": 0, "range": 300, "fireCooldownSeconds": 1, "projectileSpeed": 520, "auraRadius": 300, "auraRangeBonus": 0.25, "upgradeCost": 110 },
+        { "damage": 0, "range": 340, "fireCooldownSeconds": 1, "projectileSpeed": 520, "auraRadius": 340, "auraRangeBonus": 0.3 }
+      ]
     }
   ]
 }

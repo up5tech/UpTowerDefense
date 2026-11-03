@@ -1,0 +1,93 @@
+{
+  "id": "hollow_04",
+  "displayName": "Half Turn",
+  "mapId": "hollow_court",
+  "coreHealth": 20,
+  "startingGold": 260,
+  "waveTransitionSeconds": 5,
+  "objectives": [
+    { "kind": "coreAbove", "value": 12 },
+    { "kind": "deadlineSeconds", "value": 330 }
+  ],
+  "waves": [
+    {
+      "id": "wave_01",
+      "groups": [
+        {
+          "enemyId": "grunt",
+          "count": 16,
+          "spawnIntervalSeconds": 0.6,
+          "initialDelaySeconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "wave_02",
+      "groups": [
+        {
+          "enemyId": "runner",
+          "count": 16,
+          "spawnIntervalSeconds": 0.6,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "grunt",
+          "count": 14,
+          "spawnIntervalSeconds": 0.7,
+          "initialDelaySeconds": 4.0
+        }
+      ]
+    },
+    {
+      "id": "wave_03",
+      "groups": [
+        {
+          "enemyId": "boss",
+          "count": 1,
+          "spawnIntervalSeconds": 1.0,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 12,
+          "spawnIntervalSeconds": 0.6,
+          "initialDelaySeconds": 5.0
+        }
+      ]
+    },
+    {
+      "id": "wave_04",
+      "groups": [
+        {
+          "enemyId": "brute",
+          "count": 9,
+          "spawnIntervalSeconds": 1.3,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "runner",
+          "count": 16,
+          "spawnIntervalSeconds": 0.6,
+          "initialDelaySeconds": 5.0
+        }
+      ]
+    },
+    {
+      "id": "wave_05",
+      "groups": [
+        {
+          "enemyId": "grunt",
+          "count": 18,
+          "spawnIntervalSeconds": 0.6,
+          "initialDelaySeconds": 2.0
+        },
+        {
+          "enemyId": "brute",
+          "count": 8,
+          "spawnIntervalSeconds": 1.4,
+          "initialDelaySeconds": 5.0
+        }
+      ]
+    }
+  ]
+}

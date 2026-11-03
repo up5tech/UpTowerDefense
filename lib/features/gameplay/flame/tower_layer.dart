@@ -75,9 +75,10 @@ class TowerLayer extends PositionComponent {
         continue;
       }
       final centre = Offset(pad.position.x, pad.position.y);
-      // The current level's range, not the definition's base range: an upgraded
-      // tower really does reach further, and the circle must not lie about it.
-      final range = tower.stats.range;
+      // The current level's *effective* range: an upgraded tower really does
+      // reach further, and so does one standing under a Beacon's aura — the
+      // circle must show the reach the targeting rule actually uses (D64).
+      final range = session.effectiveStatsFor(tower).range;
       canvas
         ..drawCircle(centre, range, _rangeFill)
         ..drawCircle(centre, range, _rangeStroke);

@@ -118,6 +118,20 @@ every level. Add an enemy here once; levels reference it by `id`.
       "rewardGold": 10,
       "radius": 14,
       "color": "#D96B5B"
+    },
+    {
+      "id": "boss",
+      "displayName": "Warden",
+      "maxHealth": 1200,
+      "speed": 42,
+      "coreDamageOnLeak": 6,
+      "rewardGold": 140,
+      "radius": 24,
+      "color": "#A45CD6",
+      "isBoss": true,
+      "speedSurgeHealthRatio": 0.5,
+      "speedSurgeMultiplier": 1.5,
+      "speedSurgeDurationSeconds": 3
     }
   ]
 }
@@ -133,6 +147,10 @@ every level. Add an enemy here once; levels reference it by `id`.
 | `rewardGold` | integer ≥ 0 | Gold granted when this enemy is defeated. Leaking pays nothing. |
 | `radius` | number > 0 | Draw radius in world units; also the body size players aim at. |
 | `color` | `#RRGGBB` or `#AARRGGBB` | Body colour. Colour is never the only cue; health bars carry state. |
+| `isBoss` | boolean, default `false` | The marker that makes the three surge fields legal. Only a boss may carry a surge. |
+| `speedSurgeHealthRatio` | number in `(0, 1]` | Share of maximum health that arms the surge (D69). All three surge fields are all-or-nothing. |
+| `speedSurgeMultiplier` | number > 1 | Speed multiplier while the surge lasts. |
+| `speedSurgeDurationSeconds` | number > 0 | How long the burst lasts, in simulation seconds. |
 
 ### Validation rules
 
@@ -144,6 +162,10 @@ every level. Add an enemy here once; levels reference it by `id`.
 - `maxHealth`, `speed`, `radius` and `coreDamageOnLeak` are positive.
 - `rewardGold` is not negative (zero is allowed for an enemy that only exists to
   drain core health).
+- A `speedSurge` is rejected unless the enemy also sets `isBoss: true`;
+  `speedSurgeHealthRatio` must be in `(0, 1]`, `speedSurgeMultiplier` above 1
+  and `speedSurgeDurationSeconds` positive. The decoder refuses a partially
+  authored surge and names the missing field.
 
 ### Adding an enemy
 
@@ -151,6 +173,10 @@ every level. Add an enemy here once; levels reference it by `id`.
 2. Run `flutter test test/unit/content_assets_test.dart`; it decodes the shipped
    catalog through `EnemyRepository`.
 3. Give it a wave in a level and play that level before calling it done.
+
+A surge belongs on one boss, not on the roster: `hollow_04` introduces the
+surging boss and `hollow_05` relies on it, so a second surging enemy would need
+its own teaching level before it appears in a finale.
 
 Speeds are in world units per second against routes of roughly 1.5k–2k units, so
 `40`–`160` covers slow tanks to fast runners on the current maps.
@@ -286,7 +312,7 @@ Per-level fields:
   after two upgrades therefore returns 60% of everything spent on it, not 60% of
   the build cost, so the panel's `Sell for` number is the exact payout.
 - Every tuning change can be measured headlessly:
-  `dart run tool/balance_probe.dart` replays all ten levels through the real
+  `dart run tool/balance_probe.dart` replays all fifteen levels through the real
   session under fixed build plans and prints outcome, core health, leaks and
   kills per strategy — judge a tweak on those numbers, not on feel. Its
   order-matched control strategies exist so a support tower is compared against
@@ -472,6 +498,12 @@ Because stars are `1 + met`, a campaign level with two goals has an unbroken
 2- and 3-star ladder; a level with a single goal would cap at two stars and is
 rejected. Pair goals that pull in different directions (defence and economy,
 speed and safety) rather than two that fail together.
+
+A `maxTowers` goal is a claim that the level is winnable while under-built, and
+affordability alone does not prove it — `hollow_04` loses every capped three-tower
+run, which is why that level's second goal is a `deadlineSeconds` instead. Check
+a new tower cap by replaying the level with exactly that many towers:
+`tool/balance_probe.dart` fills every pad, so it cannot answer this on its own.
 
 Status: the goals are authored and validated now; the star rule, HUD and result
 lines that read them land with V2-3. Until then the shipped build still rates

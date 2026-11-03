@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:up_tower_defense/features/campaign/application/campaign_providers.dart';
 import 'package:up_tower_defense/features/campaign/domain/level_rating.dart';
 
-/// One line of campaign progress: "3 of 10 levels cleared · 5 of 30 stars".
+/// One line of campaign progress: "3 of 15 levels cleared · 5 of 45 stars".
 ///
 /// Shared by the level picker and the main menu so the two screens can never
 /// count differently — they read the same campaign and the same progress, and
