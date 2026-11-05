@@ -7,7 +7,7 @@
   "waveTransitionSeconds": 5,
   "objectives": [
     { "kind": "coreAbove", "value": 12 },
-    { "kind": "deadlineSeconds", "value": 52 }
+    { "kind": "deadlineSeconds", "value": 75 }
   ],
   "waves": [
     {

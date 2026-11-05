@@ -1,11 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:up_tower_defense/features/campaign/domain/level_rating.dart';
 import 'package:up_tower_defense/features/gameplay/data/content_catalog.dart';
+import 'package:up_tower_defense/features/gameplay/data/difficulty_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/enemy_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/level_bundle.dart';
 import 'package:up_tower_defense/features/gameplay/data/level_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/map_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/tower_repository.dart';
 import 'package:up_tower_defense/features/gameplay/domain/level_session.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart';
 
 /// Balance regression gate (PLAN Phase 11).
 ///
@@ -44,6 +47,16 @@ const double _timeLimit = 900;
 /// sync: a plan edited here but not there (or vice versa) breaks the promise
 /// that the gate and the probe measure the same thing.
 const Map<String, Map<String, List<(String, String)>>> _probePlans = {
+  // A deliberately under-built plan for the levels whose goals a player meets
+  // first. Keyed by level id because a `maxTowers` cap is per level, while
+  // every other strategy keys by the map it plays. Two pads satisfy a cap of 2
+  // or 3 — the cap is an upper bound — so this answers "can the goal pair be
+  // met?" rather than "can every pad win?" (D68).
+  'capped starter': {
+    'meadow_01': [('pad_a', 'ranger'), ('pad_c', 'ranger')],
+    'meadow_02': [('pad_a', 'ranger'), ('pad_c', 'ranger')],
+    'meadow_03': [('pad_a', 'ranger'), ('pad_c', 'ranger')],
+  },
   'rangers only': {
     'meadow_gate': [
       ('pad_a', 'ranger'),
@@ -154,9 +167,15 @@ const Map<String, Map<String, List<(String, String)>>> _probePlans = {
   },
 };
 
-/// One strategy's plan for one map, looked up the way the probe picks it.
-List<(String, String)> _plan(String strategy, String mapId) =>
-    _probePlans[strategy]![mapId]!;
+/// One strategy's plan for one attempt, looked up the way the probe picks it.
+///
+/// A level-keyed entry wins over the map's, because a goal cap belongs to a
+/// level while a build order belongs to a map.
+List<(String, String)> _plan(
+  String strategy,
+  String levelId,
+  String mapId,
+) => _probePlans[strategy]![levelId] ?? _probePlans[strategy]![mapId]!;
 
 /// Probe-measured outcomes for the ten levels after the opening, per strategy:
 /// `(victory, coreHealth, leaks)`.
@@ -257,11 +276,17 @@ class _Outcome {
     required this.victory,
     required this.coreHealth,
     required this.leaks,
+    required this.objectivesMet,
+    required this.objectiveCount,
+    required this.stars,
   });
 
   final bool victory;
   final int coreHealth;
   final int leaks;
+  final int objectivesMet;
+  final int objectiveCount;
+  final int stars;
 }
 
 /// Runs one attempt under a fixed plan, the way the probe does.
@@ -289,10 +314,22 @@ _Outcome _run(LevelBundle bundle, List<(String, String)> plan) {
     }
   }
 
+  final victory = session.phase == LevelPhase.victory;
+  final objectives = session.objectiveStatuses;
   return _Outcome(
-    victory: session.phase == LevelPhase.victory,
+    victory: victory,
     coreHealth: session.coreHealth,
     leaks: session.leaks,
+    objectivesMet: session.objectivesMet,
+    objectiveCount: objectives.length,
+    // The same rule the game awards with, so a pin cannot promise stars the
+    // player would not receive (D68).
+    stars: LevelRating.starsForRun(
+      victorious: victory,
+      coreHealth: session.coreHealth,
+      maxCoreHealth: bundle.level.coreHealth,
+      objectives: objectives,
+    ),
   );
 }
 
@@ -326,24 +363,64 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late final LevelRepository repository;
+  late final Map<Difficulty, DifficultyProfile> profiles;
 
-  setUpAll(() {
+  setUpAll(() async {
     repository = LevelRepository(
       mapRepository: MapRepository(),
       enemyRepository: EnemyRepository(),
       towerRepository: TowerRepository(),
     );
+    profiles = await DifficultyRepository().load();
   });
 
-  Future<LevelBundle> load(String levelId) {
-    return repository.load(ContentCatalog.levelAssetFor(levelId));
+  Future<LevelBundle> load(
+    String levelId, {
+    Difficulty difficulty = Difficulty.normal,
+  }) {
+    return repository.load(
+      ContentCatalog.levelAssetFor(levelId),
+      profile: profiles[difficulty]!,
+    );
   }
+
+  group('three-star achievability', () {
+    test('the opening three levels can earn three stars', () async {
+      for (final levelId in const ['meadow_01', 'meadow_02', 'meadow_03']) {
+        final bundle = await load(levelId);
+        final outcome = _run(
+          bundle,
+          _plan('capped starter', levelId, bundle.map.id),
+        );
+
+        expect(outcome.victory, isTrue, reason: '$levelId must stay beatable');
+        expect(
+          outcome.objectiveCount,
+          2,
+          reason: '$levelId declares two goals',
+        );
+        expect(
+          outcome.objectivesMet,
+          2,
+          reason:
+              '$levelId ships goals a capped two-tower build cannot meet. '
+              'Re-run `dart run tool/balance_probe.dart`, then either re-time '
+              'the goal or fix the level — a three-star rating nobody can '
+              'reach is a content bug (D68).',
+        );
+        expect(outcome.stars, 3, reason: '$levelId must be worth three stars');
+      }
+    });
+  });
 
   group('opening pacing', () {
     test('the first three levels stay untouched by the naive plan', () async {
       for (final levelId in const ['meadow_01', 'meadow_02', 'meadow_03']) {
         final bundle = await load(levelId);
-        final outcome = _run(bundle, _plan('rangers only', bundle.map.id));
+        final outcome = _run(
+          bundle,
+          _plan('rangers only', levelId, bundle.map.id),
+        );
 
         expect(outcome.victory, isTrue, reason: '$levelId must stay beatable');
         expect(
@@ -364,7 +441,10 @@ void main() {
     test('the first three levels stay winnable with a support build', () async {
       for (final levelId in const ['meadow_01', 'meadow_02', 'meadow_03']) {
         final bundle = await load(levelId);
-        final outcome = _run(bundle, _plan('frost control', bundle.map.id));
+        final outcome = _run(
+          bundle,
+          _plan('frost control', levelId, bundle.map.id),
+        );
 
         expect(
           outcome.victory,
@@ -388,8 +468,8 @@ void main() {
         ];
 
         for (final (levelId, mapId) in comparisons) {
-          final control = _plan('rangers only', mapId);
-          final support = _plan('frost control', mapId);
+          final control = _plan('rangers only', levelId, mapId);
+          final support = _plan('frost control', levelId, mapId);
           final bundle = await load(levelId);
 
           expect(
@@ -448,7 +528,10 @@ void main() {
 
         for (final strategy in entry.value.entries) {
           final (victory, coreHealth, leaks) = strategy.value;
-          final outcome = _run(bundle, _plan(strategy.key, bundle.map.id));
+          final outcome = _run(
+            bundle,
+            _plan(strategy.key, levelId, bundle.map.id),
+          );
           final where = '$levelId / ${strategy.key}';
 
           expect(

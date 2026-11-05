@@ -43,6 +43,18 @@ not a distributable build. Do not treat this local status note as a
 completed sign-off; finish the unchecked gates below with recorded device/build
 evidence.
 
+**Current v2 gate status (2026-11-05): CONTENT AND QA DONE, DISTRIBUTION
+OPEN.** `pubspec.yaml` is at `2.0.0+2`. `flutter analyze`, `dart format`, the
+full 565-test suite and the content validator are clean; the balance probe runs
+all 15 levels on Normal and on Hard with both columns pinned; and
+`flutter build apk --release` (56.2 MB) plus `flutter build ios --simulator`
+both succeed. The APK and the AAB are **release-signed** (`CN=UpTowerDefense`, verified with
+`apksigner verify --print-certs`), so the Android upload artifact exists; what
+remains is the Play/TestFlight upload itself, an iOS archive/export (needs an
+Apple team), the 1.0 → 2.0 over-install and the hardware pass;
+the evidence for everything else is in
+[`V2_RELEASE_REPORT.md`](V2_RELEASE_REPORT.md).
+
 iOS signing is configured in Xcode (automatic signing with the development
 team, or an exported `.p12` for CI). The bundle id is
 `com.uptowerdefense.game` on both platforms and must never change after the

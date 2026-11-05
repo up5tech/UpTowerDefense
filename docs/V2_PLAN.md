@@ -11,7 +11,7 @@ bump. The toolchain re-verification is one small phase inside it (V2-0), because
 a store update is also the moment we are forced to re-check Flutter, Flame and
 platform requirements.
 
-**Status (2026-11-02).** V2-0 is complete on the evidence recorded in
+**Status (2026-11-05).** V2-0 is complete on the evidence recorded in
 [`QA_SCENARIOS.md`](QA_SCENARIOS.md) §9. Haptics were wired in Phase 13 (D71);
 the local SDK is Flutter 3.47.8 / Dart 3.13.7, a required security update for
 Android, Windows and Linux Flutter apps rather than an optional future bump; and
@@ -29,12 +29,30 @@ V2-1 shipped Region 3: `hollow_court` with seven pads, five levels
 levels under all four strategies, and every ember row of the pinned table is
 unchanged, so the surge cost the shipped campaign nothing.
 
-Work landed ahead of V2-3: all fifteen campaign levels now declare objectives, and
-the decoder, content gate and `CONTENT_AUTHORING.md` cover their format and
-authoring constraints. Objective evaluation, stars, HUD/results and save v4
-remain unimplemented. Planned scope decisions are recorded in
-[`GAME_DESIGN.md`](GAME_DESIGN.md) §14 (D63–D71); implementation-specific
-decisions still to be logged are listed in §8 below.
+V2-2 shipped the final roster — the arc and beacon towers, the bulwark and
+splitter enemies — with the same-slot controls and the 15-level probe re-run.
+V2-3 shipped the replay systems: objective evaluation and the `1 + met` star
+rule, goal lines in the HUD, pause panel, result panel and picker, Normal/Hard as
+one load-time data profile with both balance columns pinned, the seeded daily
+challenge and save v4. V2-4 shipped the meta layer: the ten achievements with a
+single unlock path, the progress screen and save v5 — which also persists the
+per-date daily records V2-3 held for the session, per §5. V2-5 shipped the
+accessibility pass: a 1.3× large-text gate over the HUD, the pad and pause
+panels and the result card, screen-reader labels for HUD facts and panel
+actions, three tutorial steps for chain/aura/splitters, and a silhouette check
+on every shipped enemy's art. Decisions D63–D78 are recorded in
+[`GAME_DESIGN.md`](GAME_DESIGN.md) §14.
+
+V2-6 ran the full probe over 15 levels on both difficulties, re-checked both
+pinned columns (they matched, so no pin moved), extended the QA scenarios to the
+daily challenge, difficulty switching, achievements and a 1.0→2.0 upgrade, moved
+the build to `2.0.0+2`, and rewrote the store copy for the fifteen-level roster.
+Its evidence is [`V2_RELEASE_REPORT.md`](V2_RELEASE_REPORT.md). Android signing
+closed on 2026-11-05: the `2.0.0+2` APK and AAB verify against the release
+certificate (`CN=UpTowerDefense`). **V2-6 is still not signed off**: the hardware
+pass (audio audibility, release-mode GPU pacing, thermals, and the 1.0 → 2.0
+over-install on a device), an iOS archive/TestFlight export and the store upload
+are open.
 
 ---
 
@@ -114,7 +132,7 @@ Do not start a later stage by skipping an unmet gate.
 | 2. Content and roster | V2-1 → V2-2 | Third region plus final five-tower/six-enemy roster | V2-1 passes with the original three towers; V2-2 passes mechanic and same-slot tests, then pins the full 15-level roster probe |
 | 3. Replay systems | V2-3 | Objectives, Normal/Hard campaign, deterministic daily challenge; save v4 | V2-1 and V2-2 probe gates pass; both difficulty columns are pinned; v1.0 save compatibility remains covered |
 | 4. Progression and usability | V2-4 → V2-5 | Achievements, progress screen, save v5, accessibility/tutorial updates | Achievement facts are persisted once; large-text, labels and reduced-motion criteria pass on the completed V2 UI |
-| 5. Release | V2-6 | QA evidence and store-ready 2.0 build | Every earlier stage is signed off; all V2-6 release acceptance criteria pass |
+| 5. Release | V2-6 | QA evidence and store-ready 2.0 build | Every earlier stage is signed off; all V2-6 release acceptance criteria pass (evidence complete 2026-11-05; the hardware pass and the signed binary are still open) |
 
 **Critical order:** V2-0 → V2-1 → V2-2 → V2-3 → V2-4 → V2-5 → V2-6.
 V2-2 re-runs the probe after its new roster lands; that final table is the gate
@@ -279,8 +297,8 @@ Acceptance criteria:
 **Goal:** more than one way to play the levels that exist.
 
 **Per-level objectives (supersedes D35, D68).** Every campaign level declares
-exactly two objectives as data (the ten existing levels already do; scoring and
-presentation remain to be implemented):
+exactly two objectives as data (all fifteen already do; scoring and presentation
+ship in this phase):
 
 ```json
 "objectives": [
@@ -296,10 +314,12 @@ value, never authored, and `coreAbove` must sit below
 the level's core so it cannot restate `noLeaks`. Stars are `1 + met`, defeat is
 0, and a level without objectives (fixtures, endless) keeps the 1.0 ladder.
 
-- Authoring half is in: all ten campaign levels declare their two goals, the
-  format is documented in `CONTENT_AUTHORING.md`, and the content gate checks
-  shape, bounds and gold feasibility. The star rule, HUD and result lines are
-  what remain.
+- Shipped: all fifteen campaign levels declare their two goals, the format is
+  documented in `CONTENT_AUTHORING.md`, the content gate checks shape, bounds and
+  gold feasibility, `LevelRating` awards `1 + met` stars, and the HUD chip, pause
+  panel, result panel and picker read the one published status list. Scoring
+  exposed four deadlines that were shorter than a real clear; they were re-timed
+  against probe measurements (D76).
 - `LevelSession` exposes one objective status, including the highest number of
   towers that stood simultaneously; selling cannot lower this recorded peak.
   `LevelHudState` publishes `objectivesMet`, and the HUD, result panel and
@@ -382,7 +402,21 @@ Tasks:
   It reads from the same providers the menu already uses (D44 pattern) so two
   screens cannot count differently.
 - Save **v5** adds `achievements` and daily results; loading a v3/v4 save fills
-  defaults, and the repository-level upgrade test gains the new pairs.
+  defaults, and the repository-level upgrade test gains the new pairs (D77).
+
+**Shipped.** `achievement.dart` is a closed ten-id enum with labels and a pure
+evaluator over stored facts, so nothing is tracked per frame and no achievement
+invents a rule the domain does not own. The gameplay screen's outcome handler
+refreshes it once per recorded result — campaign, endless and daily alike — and
+the progress screen refreshes once on open to backfill a save written before
+achievements existed; the notifier stores only ids missing from the current set,
+so a replay, a restart or two calls in one frame cannot double-award.
+`progress_screen.dart` serves `/progress` from the menu's own providers:
+campaign totals (Normal, plus Hard once that difficulty is available), endless
+best, today's daily best, and the earned-or-locked list. `save_v5_test` pins the
+round trip, the v4→v5 and v1 reads and the refusals; `achievement_providers_test`
+pins unlock-once over a real repository; `progress_screen_test` reaches the
+screen through the menu and asserts the totals it shows.
 
 Acceptance criteria:
 
@@ -409,36 +443,77 @@ Acceptance criteria:
 - Every interactive element has a label that names the action and its cost.
 - Reduced motion removes motion from new effects but keeps the information.
 
+**Shipped.** `large_text_test` pumps the HUD, the build menu, the tower details,
+the pause panel and the defeat result card at 1.3× text on the 800×450 reference
+landscape and fails on any exception, so an overflow is a suite failure rather
+than a device discovery. The pause case uses the campaign's longest level name
+and taps Pause, which is how the audit found the whole HUD scrolling the action
+buttons off the surface; Back, Pause and the speed toggle now sit outside the
+scrolling fact strip. HUD chips announce a sentence (`Gold 150`, `Core 5 of 5`,
+`Wave 1 of 2`, `Goals 1 of 2`, the level and the mode) while keeping their glyph
+shorthand on screen, and the target-priority chips name the action they choose;
+build, upgrade and sell keep the labels that carry their cost. The tutorial card
+grew the three V2-2 mechanics — chain jumps, the Beacon aura and splitters — as
+extra steps under D52's rule, so every step still advances only by its own button
+and the close control works on any step. `sprite_silhouette_test` compares every
+shipped enemy's alpha mask pairwise, which is the D46 check that no two enemies
+can be told apart by colour alone, and `fx_layer_test` asserts the splash
+boundary survives reduced motion.
+
 ### V2-6 — Balance, QA, release 2.0 (M)
 
 Tasks:
 
-- Full probe run over 15 levels × both difficulties × four strategies; re-pin
-  the regression table; write the outcome table into the phase report.
-- Extend `docs/QA_SCENARIOS.md` with the daily challenge, difficulty switching,
-  achievement unlock and a save-upgrade-from-1.0 scenario.
-- Bump `pubspec.yaml` to `2.0.0+<build>`; update store listing, screenshots and
-  release notes; re-check the age rating for the new content.
-- Build release APK and the iOS archive path; verify an upgrade install over a
-  1.0 build with real progress.
-- Update README phase/status line, AGENTS.md toolchain table and this document's
-  status clause.
+- [x] Full probe run over 15 levels × both difficulties × four strategies;
+  re-pin the regression table; write the outcome table into the phase report.
+  Ran 2026-11-05: every level is won on Normal under every plan, and Hard loses
+  nine rows (hollow_03–hollow_05 under every plan but `cannon crossfire`) while
+  staying winnable everywhere. Both pins matched the fresh run, so nothing was
+  re-pinned. Tables: [`V2_RELEASE_REPORT.md`](V2_RELEASE_REPORT.md) §2–§3.
+- [x] Extend `docs/QA_SCENARIOS.md` with the daily challenge, difficulty
+  switching, achievement unlock and a save-upgrade-from-1.0 scenario. Sections
+  12–15, with §16 as the run record; they are written and **unrun on hardware**.
+- [x] Bump `pubspec.yaml` to `2.0.0+<build>`; update store listing, screenshots
+  and release notes; re-check the age rating for the new content. `2.0.0+2`;
+  [`STORE_LISTING.md`](STORE_LISTING.md) is rewritten for the shipped roster,
+  with a 2.0.0 release-notes section, an eight-shot plan and a v2 age-rating
+  re-check.
+- [x] Build release APK and the iOS archive path; verify an upgrade install over
+  a 1.0 build with real progress. **Partly:** `flutter build apk --release`
+  (56.2 MB) and `flutter build appbundle --release` (54.4 MB) are signed with the
+  release certificate (`CN=UpTowerDefense`, verified by
+  `apksigner verify --print-certs`), and `flutter build ios --simulator`
+  succeeds. Still open: no iOS archive/export (no Apple team on this host) and
+  the over-install — no 1.0 artifact and no attached device.
+- [x] Update README phase/status line, AGENTS.md toolchain table and this
+  document's status clause.
 
 Acceptance criteria (all must hold to ship):
 
-- `dart format` clean, `flutter analyze` clean, full suite green.
-- `offline_guard_test` green; release manifest still declares no permissions.
-- Save upgrade verified on a device: 1.0 → 2.0 keeps progress, settings, stars
-  and endless best, and a damaged save still falls back safely.
-- No known blocker, data-loss defect or resource leak.
-- Store assets describe the build that actually ships.
+- [x] `dart format` clean, `flutter analyze` clean, full suite green (565
+  passing, 2026-11-05).
+- [x] `offline_guard_test` green; release manifest still declares no permissions.
+- [ ] Save upgrade verified on a device: 1.0 → 2.0 keeps progress, settings,
+  stars and endless best, and a damaged save still falls back safely. Scenarios
+  U1–U5 exist and the automated halves pass (`save_codec_test` v1→v5 pairs,
+  `save_repository_test` recovery); the on-device over-install is not evidence
+  this host can produce.
+- [x] No known blocker, data-loss defect or resource leak. Two open low findings
+  are environmental (audio audibility, GPU pacing); the distribution gate is an
+  operational item, not a gameplay defect.
+- [x] Store assets describe the build that actually ships.
+
+**Exit gate: open.** V2-6 is not signed off until the hardware pass
+(`QA_SCENARIOS.md` §9 "Not produced on this host"), the 1.0 → 2.0 over-install
+and an iOS archive exist. Android shipping binaries are done and release-signed.
+The remaining list is [`V2_RELEASE_REPORT.md`](V2_RELEASE_REPORT.md) §6.
 
 ---
 
 ## 5. Version and save policy
 
-- **App version:** `2.0.0` at V2-6. Build number stays monotonic per store
-  upload. Intermediate phases ship as internal builds (`1.1.0+*`) if they are
+- **App version:** `2.0.0` at V2-6, shipped as `2.0.0+2`. Build number stays
+  monotonic per store upload. Intermediate phases ship as internal builds (`1.1.0+*`) if they are
   installed on devices at all.
 - **Save schema:** v4 lands with objectives/difficulty results (V2-3), v5 with
   achievements and dailies (V2-4). Both are additive and default-filled; the

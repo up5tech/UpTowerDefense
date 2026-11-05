@@ -9,6 +9,8 @@ import 'package:up_tower_defense/features/campaign/domain/campaign_definition.da
 import 'package:up_tower_defense/features/campaign/domain/campaign_progress.dart';
 import 'package:up_tower_defense/features/campaign/domain/level_rating.dart';
 import 'package:up_tower_defense/features/campaign/presentation/campaign_summary.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart';
+import 'package:up_tower_defense/features/level_select/presentation/difficulty_selector.dart';
 import 'package:up_tower_defense/shared/layout/menu_layout.dart';
 
 /// The campaign picker.
@@ -67,6 +69,13 @@ class _CampaignBody extends StatefulWidget {
 class _CampaignBodyState extends State<_CampaignBody> {
   late int _page;
 
+  /// Which mode the picker is showing (D65).
+  ///
+  /// Presentation state, not saved: opening the picker always starts on Normal,
+  /// the mode that is always available, so a player who last looked at Hard is
+  /// never dropped into a locked list on the next visit.
+  Difficulty _difficulty = Difficulty.normal;
+
   @override
   void initState() {
     super.initState();
@@ -83,7 +92,7 @@ class _CampaignBodyState extends State<_CampaignBody> {
       (campaign.levelCount / _CampaignBody.levelsPerPage).ceil(),
     );
     final nextIndex = campaign.levelIds.indexWhere(
-      (id) => !widget.progress.isCompleted(id),
+      (id) => !widget.progress.isCompleted(id, difficulty: _difficulty),
     );
     if (nextIndex < 0) {
       return pageCount - 1;
@@ -124,7 +133,19 @@ class _CampaignBodyState extends State<_CampaignBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const CampaignSummary(),
+        CampaignSummary(difficulty: _difficulty),
+        const SizedBox(height: 12),
+        DifficultySelector(
+          difficulty: _difficulty,
+          // Hard is offered only once a region is cleared on Normal, so the
+          // mode can never stand between a first-time player and the campaign
+          // (D65).
+          hardAvailable: progress.isHardAvailable(campaign),
+          onChanged: (difficulty) => setState(() {
+            _difficulty = difficulty;
+            _page = _pageForProgress();
+          }),
+        ),
         if (pageCount > 1) ...[
           const SizedBox(height: 8),
           _PageControls(
@@ -149,6 +170,7 @@ class _CampaignBodyState extends State<_CampaignBody> {
             progress: progress,
             region: section.region,
             levels: section.levels,
+            difficulty: _difficulty,
           ),
           const SizedBox(height: 16),
         ],
@@ -235,6 +257,7 @@ class _RegionSection extends StatelessWidget {
     required this.progress,
     required this.region,
     required this.levels,
+    required this.difficulty,
   });
 
   final CampaignDefinition campaign;
@@ -242,11 +265,16 @@ class _RegionSection extends StatelessWidget {
   final CampaignRegion region;
   final List<CampaignLevel> levels;
 
+  /// The mode whose results this section reports.
+  final Difficulty difficulty;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cleared = region.levels
-        .where((level) => progress.isCompleted(level.id))
+        .where(
+          (level) => progress.isCompleted(level.id, difficulty: difficulty),
+        )
         .length;
 
     return Column(
@@ -282,6 +310,7 @@ class _RegionSection extends StatelessWidget {
                   progress: progress,
                   level: levels[index],
                   showDivider: index > 0,
+                  difficulty: difficulty,
                 ),
             ],
           ),
@@ -298,6 +327,7 @@ class _LevelTile extends StatelessWidget {
     required this.progress,
     required this.level,
     required this.showDivider,
+    required this.difficulty,
   });
 
   final CampaignDefinition campaign;
@@ -305,11 +335,18 @@ class _LevelTile extends StatelessWidget {
   final CampaignLevel level;
   final bool showDivider;
 
+  /// The mode this row's stars, unlock state and opening route belong to.
+  final Difficulty difficulty;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final unlocked = progress.isUnlocked(campaign, level.id);
-    final stars = progress.starsFor(level.id);
+    final unlocked = progress.isUnlocked(
+      campaign,
+      level.id,
+      difficulty: difficulty,
+    );
+    final stars = progress.starsFor(level.id, difficulty: difficulty);
     final ordinal = campaign.ordinalOf(level.id);
     // A locked row names the level that opens it: the previous level in the
     // flattened order, which is the only thing that can (D33).
@@ -320,6 +357,15 @@ class _LevelTile extends StatelessWidget {
     final lockReason = previousName == null
         ? 'Clear the previous level to unlock'
         : 'Clear $previousName to unlock';
+    // Hard gates a whole region at once, so its lock message names the mode
+    // rather than one level (D65).
+    final regionLockedOnHard =
+        difficulty != Difficulty.normal &&
+        !progress.isRegionCleared(campaign.regionOf(level.id)!);
+    final blockedReason = regionLockedOnHard
+        ? 'Clear ${campaign.regionOf(level.id)!.displayName} on Normal to '
+              'open Hard'
+        : lockReason;
 
     final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -351,11 +397,25 @@ class _LevelTile extends StatelessWidget {
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 2),
-                if (unlocked)
-                  _StarRow(stars: stars)
-                else
+                if (unlocked) ...[
+                  _StarRow(stars: stars),
+                  if (level.objectives.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        // The goals are the stars, so the picker shows the
+                        // same derived sentences the run does (D68).
+                        level.objectives
+                            .map((objective) => objective.description)
+                            .join(' · '),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                ] else
                   Text(
-                    lockReason,
+                    blockedReason,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -379,13 +439,18 @@ class _LevelTile extends StatelessWidget {
           button: unlocked,
           enabled: unlocked,
           label: unlocked
-              ? 'Play level $ordinal, ${level.displayName}, '
-                    '$stars of ${LevelRating.maxStars} stars'
-              : 'Level $ordinal, ${level.displayName}, locked'
-                    '${previousName == null ? '' : ', opens after $previousName'}',
+              ? 'Play level $ordinal, ${level.displayName} on '
+                    '${difficulty.label}, $stars of ${LevelRating.maxStars} stars'
+              : 'Level $ordinal, ${level.displayName}, locked on '
+                    '${difficulty.label}: $blockedReason',
           child: unlocked
               ? InkWell(
-                  onTap: () => context.go(AppRoutes.gameplayFor(level.id)),
+                  onTap: () => context.go(
+                    AppRoutes.gameplayFor(
+                      level.id,
+                      difficulty: difficulty,
+                    ),
+                  ),
                   child: content,
                 )
               : Opacity(opacity: 0.6, child: content),

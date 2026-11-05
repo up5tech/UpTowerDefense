@@ -39,6 +39,8 @@ void main() {
     final sink = RecordingMusicSink();
     await pumpApp(tester, musicSink: sink);
 
+    await tester.ensureVisible(find.text('Settings'));
+
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     await tester.tap(musicTile());
@@ -63,6 +65,8 @@ void main() {
   ) async {
     final sink = RecordingMusicSink();
     await pumpApp(tester, musicSink: sink);
+
+    await tester.ensureVisible(find.text('Settings'));
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();

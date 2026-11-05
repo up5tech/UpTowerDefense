@@ -54,10 +54,26 @@ class MainMenuScreen extends ConsumerWidget {
           onTap: () => context.go(AppRoutes.endless),
         ),
         const SizedBox(height: 12),
+        // The daily challenge is one seeded campaign level per local day (D66);
+        // it sits beside the other modes and never changes campaign progress.
+        _MenuButton(
+          icon: Icons.today_rounded,
+          label: 'Daily challenge',
+          onTap: () => context.go(AppRoutes.daily),
+        ),
+        const SizedBox(height: 12),
         _MenuButton(
           icon: Icons.map_outlined,
           label: 'Campaign',
           onTap: () => context.go(AppRoutes.levelSelect),
+        ),
+        const SizedBox(height: 12),
+        // Totals, endless and daily bests, and the achievement list in one
+        // place, all read from the providers the menu already uses (V2-4).
+        _MenuButton(
+          icon: Icons.emoji_events_outlined,
+          label: 'Progress',
+          onTap: () => context.go(AppRoutes.progress),
         ),
         const SizedBox(height: 12),
         _MenuButton(

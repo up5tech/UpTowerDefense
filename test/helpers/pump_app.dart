@@ -63,7 +63,7 @@ Future<ProviderContainer> pumpApp(
         endlessBundleProvider.overrideWith((ref) async => testBundle),
         campaignProvider.overrideWith((ref) => testCampaign),
         levelBundleProvider.overrideWith(
-          (ref, levelId) => bundleForLevel(levelId),
+          (ref, request) => bundleForLevel(request.levelId),
         ),
         // The credits screen reads the attribution document from the bundle;
         // tests serve a fixture with the same shape, never the real file.

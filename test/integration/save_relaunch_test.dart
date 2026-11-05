@@ -83,6 +83,7 @@ void main() {
     );
 
     // The picker agrees with what was loaded, not with a fresh campaign.
+    await tester.ensureVisible(find.text('Campaign'));
     await tester.tap(find.text('Campaign'));
     await tester.pumpAndSettle();
     expect(find.text('Clear Second Meadow to unlock'), findsOneWidget);
@@ -106,6 +107,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // The picker agrees: a clean campaign locks everything but its first level.
+    await tester.ensureVisible(find.text('Campaign'));
     await tester.tap(find.text('Campaign'));
     await tester.pumpAndSettle();
     expect(find.text('Clear Test Meadow to unlock'), findsOneWidget);
@@ -120,6 +122,7 @@ void main() {
     final container = await pumpApp(tester, saveStore: storage);
 
     // Navigating and idling on the menu write nothing.
+    await tester.ensureVisible(find.text('Campaign'));
     await tester.tap(find.text('Campaign'));
     await tester.pumpAndSettle();
     for (var frame = 0; frame < 30; frame++) {

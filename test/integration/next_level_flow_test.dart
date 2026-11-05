@@ -91,6 +91,8 @@ void main() {
       settings: GameSettings.defaults.copyWith(tutorialSeen: true),
     );
 
+    await tester.ensureVisible(find.text('Campaign'));
+
     await tester.tap(find.text('Campaign'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Test Meadow'));

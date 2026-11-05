@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:up_tower_defense/app/routes.dart';
 import 'package:up_tower_defense/features/codex/presentation/codex_screen.dart';
 import 'package:up_tower_defense/features/credits/presentation/credits_screen.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart';
+import 'package:up_tower_defense/features/gameplay/presentation/daily_challenge_screen.dart';
 import 'package:up_tower_defense/features/gameplay/presentation/gameplay_screen.dart';
 import 'package:up_tower_defense/features/level_select/presentation/level_select_screen.dart';
 import 'package:up_tower_defense/features/main_menu/presentation/main_menu_screen.dart';
+import 'package:up_tower_defense/features/progress/presentation/progress_screen.dart';
 import 'package:up_tower_defense/features/settings/presentation/settings_screen.dart';
 
 /// Builds one router instance.
@@ -40,18 +43,42 @@ GoRouter createAppRouter({String initialLocation = AppRoutes.mainMenu}) {
           // gameplay entry rather than stack a second gameplay screen behind it,
           // so back from a level returns to the menu in one step.
           GoRoute(
-            path: 'play/:levelId',
+            path: 'play/:levelId/:difficulty',
             builder: (context, state) {
               final levelId = state.pathParameters['levelId']!;
-              // A key per level: moving from one level to the next must
-              // remount the screen, so a finished attempt's game and its
-              // overlays never survive into the level that follows it.
-              return GameplayScreen(key: ValueKey(levelId), levelId: levelId);
+              // An unknown segment falls back to Normal rather than throwing:
+              // a stale link must still open the level, and Normal is the mode
+              // that always exists.
+              final difficulty =
+                  Difficulty.fromWireName(
+                    state.pathParameters['difficulty'] ?? '',
+                  ) ??
+                  Difficulty.normal;
+              // A key per level *and* mode: moving from one level to the next —
+              // or switching difficulty — must remount the screen, so a
+              // finished attempt's game and its overlays never survive into the
+              // attempt that follows it (D65).
+              return GameplayScreen(
+                key: ValueKey('$levelId-${difficulty.wireName}'),
+                levelId: levelId,
+                difficulty: difficulty,
+              );
             },
+          ),
+          // The daily challenge resolves to one campaign level for today; its
+          // own route keeps back returning to the menu and keeps its result out
+          // of the campaign (D70).
+          GoRoute(
+            path: 'daily',
+            builder: (context, state) => const DailyChallengeScreen(),
           ),
           GoRoute(
             path: 'levels',
             builder: (context, state) => const LevelSelectScreen(),
+          ),
+          GoRoute(
+            path: 'progress',
+            builder: (context, state) => const ProgressScreen(),
           ),
           GoRoute(
             path: 'codex',

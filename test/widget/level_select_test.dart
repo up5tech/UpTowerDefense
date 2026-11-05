@@ -63,7 +63,7 @@ Future<ProviderContainer> pumpLevelSelect(
         builder: (context, state) => const LevelSelectScreen(),
       ),
       GoRoute(
-        path: '/play/:levelId',
+        path: '/play/:levelId/:difficulty',
         builder: (context, state) =>
             Scaffold(body: Text('playing ${state.pathParameters['levelId']}')),
       ),
@@ -80,7 +80,7 @@ Future<ProviderContainer> pumpLevelSelect(
             () => _PresetProgressNotifier(progress),
           ),
         levelBundleProvider.overrideWith(
-          (ref, levelId) => bundleForLevel(levelId),
+          (ref, request) => bundleForLevel(request.levelId),
         ),
         isolatedSaveOverride(),
       ],
@@ -140,7 +140,10 @@ void main() {
     ]) {
       expect(find.text(name), findsOneWidget);
     }
-    expect(find.text('0 of 4 levels cleared · 0 of 12 stars'), findsOneWidget);
+    expect(
+      find.text('0 of 4 levels cleared on Normal · 0 of 12 stars'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the picker shows five levels per page', (tester) async {
@@ -293,7 +296,7 @@ void main() {
     expect(find.text('Clear Second Meadow to unlock'), findsOneWidget);
     expect(find.text('Clear Third Meadow to unlock'), findsOneWidget);
     expect(
-      find.text('1 of 4 levels cleared · 3 of 12 stars'),
+      find.text('1 of 4 levels cleared on Normal · 3 of 12 stars'),
       findsOneWidget,
     );
   });
@@ -321,6 +324,8 @@ void main() {
     tester,
   ) async {
     await pumpApp(tester);
+
+    await tester.ensureVisible(find.text('Campaign'));
 
     await tester.tap(find.text('Campaign'));
     await tester.pumpAndSettle();

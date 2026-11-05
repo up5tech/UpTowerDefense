@@ -14,6 +14,8 @@ void main() {
   ) async {
     await pumpApp(tester);
 
+    await tester.ensureVisible(find.text('Codex'));
+
     await tester.tap(find.text('Codex'));
     await tester.pumpAndSettle();
 
@@ -48,6 +50,8 @@ void main() {
     tester,
   ) async {
     await pumpApp(tester);
+
+    await tester.ensureVisible(find.text('Codex'));
 
     await tester.tap(find.text('Codex'));
     await tester.pumpAndSettle();

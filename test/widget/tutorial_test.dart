@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:up_tower_defense/app/router.dart';
+import 'package:up_tower_defense/app/routes.dart';
 import 'package:up_tower_defense/core/constants/app_info.dart';
 import 'package:up_tower_defense/features/gameplay/presentation/gameplay_screen.dart';
 import 'package:up_tower_defense/features/main_menu/presentation/main_menu_screen.dart';
@@ -23,20 +24,28 @@ void main() {
     await pumpApp(tester, store: store);
 
     await tester.tap(find.text('Play'));
-    await pumpUntilFound(tester, find.text('Step 1 of 3'));
+    await pumpUntilFound(tester, find.text('Step 1 of 6'));
     expect(store.settings.tutorialSeen, isFalse);
 
     await tester.tap(find.text('Next'));
     await tester.pump();
-    expect(find.text('Step 2 of 3'), findsOneWidget);
+    expect(find.text('Step 2 of 6'), findsOneWidget);
 
     await tester.tap(find.text('Next'));
     await tester.pump();
-    expect(find.text('Step 3 of 3'), findsOneWidget);
+    expect(find.text('Step 3 of 6'), findsOneWidget);
+
+    // The three V2-2 mechanics keep their own steps, and the tour still ends
+    // only through its last button (V2-5).
+    for (var step = 4; step <= 6; step++) {
+      await tester.tap(find.text('Next'));
+      await tester.pump();
+      expect(find.text('Step $step of 6'), findsOneWidget);
+    }
 
     await tester.tap(find.text('Got it'));
     await tester.pump();
-    expect(find.text('Step 1 of 3'), findsNothing);
+    expect(find.text('Step 1 of 6'), findsNothing);
     expect(find.text('Got it'), findsNothing);
 
     // The dismissal was written through the real settings chain…
@@ -50,7 +59,7 @@ void main() {
     await tester.tap(find.text('Play'));
     await pumpUntilFound(tester, find.byType(GameplayScreen));
     await tester.pump();
-    expect(find.text('Step 1 of 3'), findsNothing);
+    expect(find.text('Step 1 of 6'), findsNothing);
   });
 
   testWidgets('the tutorial can be skipped straight from the first step', (
@@ -60,12 +69,12 @@ void main() {
     await pumpApp(tester, store: store);
 
     await tester.tap(find.text('Play'));
-    await pumpUntilFound(tester, find.text('Step 1 of 3'));
+    await pumpUntilFound(tester, find.text('Step 1 of 6'));
 
     await tester.tap(find.byTooltip('Skip tutorial'));
     await tester.pump();
 
-    expect(find.text('Step 1 of 3'), findsNothing);
+    expect(find.text('Step 1 of 6'), findsNothing);
     expect(store.settings.tutorialSeen, isTrue);
   });
 
@@ -73,7 +82,7 @@ void main() {
     await pumpApp(tester);
 
     await tester.tap(find.text('Play'));
-    await pumpUntilFound(tester, find.text('Step 1 of 3'));
+    await pumpUntilFound(tester, find.text('Step 1 of 6'));
 
     // The wave control under the card still works while the tour is up: a
     // player who already knows the game never has to step through it.
@@ -81,7 +90,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Wave in progress'), findsOneWidget);
-    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(find.text('Step 1 of 6'), findsOneWidget);
   });
 
   testWidgets('levels after the campaign opener open without the card', (
@@ -92,11 +101,11 @@ void main() {
     final container = ProviderScope.containerOf(
       tester.element(find.byType(MainMenuScreen)),
     );
-    container.read(routerProvider).go('/play/test_level_2');
+    container.read(routerProvider).go(AppRoutes.gameplayFor('test_level_2'));
 
     await pumpUntilFound(tester, find.byType(GameplayScreen));
     await tester.pump();
 
-    expect(find.text('Step 1 of 3'), findsNothing);
+    expect(find.text('Step 1 of 6'), findsNothing);
   });
 }

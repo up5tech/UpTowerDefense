@@ -11,6 +11,9 @@ abstract final class ContentCatalog {
   /// Authored campaign: regions, level order and level names.
   static const String campaign = 'assets/data/campaign.json';
 
+  /// Difficulty profiles (D65): one entry per shipped mode.
+  static const String difficulties = 'assets/data/difficulties.json';
+
   /// Asset path for a level id.
   ///
   /// Level ids are file names by convention, and `campaign_assets_test` asserts

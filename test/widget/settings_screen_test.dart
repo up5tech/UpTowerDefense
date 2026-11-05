@@ -21,6 +21,8 @@ void main() {
     final store = InMemorySettingsStore();
     await pumpApp(tester, store: store);
 
+    await tester.ensureVisible(find.text('Settings'));
+
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
@@ -44,6 +46,7 @@ void main() {
     final store = InMemorySettingsStore(stored);
 
     await pumpApp(tester, store: store, settings: stored);
+    await tester.ensureVisible(find.text('Settings'));
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
@@ -57,6 +60,7 @@ void main() {
   ) async {
     final store = InMemorySettingsStore();
     await pumpApp(tester, store: store);
+    await tester.ensureVisible(find.text('Settings'));
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
@@ -88,6 +92,7 @@ void main() {
           ),
         );
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Settings'));
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     // Settings keeps saying where progress lives even with nothing wrong —
@@ -130,6 +135,7 @@ void main() {
     final store = InMemorySettingsStore(stored);
 
     await pumpApp(tester, store: store, settings: stored);
+    await tester.ensureVisible(find.text('Settings'));
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
@@ -156,6 +162,7 @@ void main() {
     final store = InMemorySettingsStore(stored);
 
     await pumpApp(tester, store: store, settings: stored);
+    await tester.ensureVisible(find.text('Settings'));
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
@@ -182,6 +189,7 @@ void main() {
     final save = await PreferencesSaveStore.open();
 
     await pumpApp(tester, saveStore: save);
+    await tester.ensureVisible(find.text('Settings'));
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 

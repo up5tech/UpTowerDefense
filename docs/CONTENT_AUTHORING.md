@@ -436,7 +436,7 @@ campaign's first unfinished level.
 | `coreHealth` | integer > 0 | Core health the attempt starts with. |
 | `startingGold` | integer ≥ 0 | Gold the attempt starts with, before any kills. |
 | `waveTransitionSeconds` | number > 0 | Optional (default `5`); simulation seconds between a cleared wave and the next one starting on its own. The player can always start early. |
-| `objectives` | list of objectives | Optional; 0 or exactly 2. Every campaign level must declare 2, the endless level none, fixtures may skip them. See [Objectives](#objectives). |
+| `objectives` | list of objectives | Optional; 0 or exactly 2. Every campaign level must declare 2, the endless level none, fixtures may skip them. `campaign.json` mirrors the same list so the picker needs no level bundle; the content gate asserts the two are identical. See [Objectives](#objectives). |
 | `objectives[].kind` | one of `noLeaks`, `maxTowers`, `deadlineSeconds`, `coreAbove` | The goal; the player-facing sentence is derived from it, never authored. |
 | `objectives[].value` | integer | Required for every kind except `noLeaks`, which takes no value. |
 | `waves` | list of waves | Ordered; at least one. |
@@ -491,7 +491,7 @@ never disagree with the rule it names:
 |---|---|---|---|
 | `noLeaks` | none | Take no leaks | Use on levels where the route is already understood; it is the strictest goal. |
 | `maxTowers` | towers ≥ 1 | Never have more than N towers standing | Keep `N × cheapest tower cost` within `startingGold`; the gate enforces it. Selling does not lower the count. |
-| `deadlineSeconds` | seconds > 0 | Finish within N seconds | Must clear the level's minimum spawn duration; that is a floor, not a target — aim well above it. |
+| `deadlineSeconds` | seconds > 0 | Finish within N seconds | Must clear the level's minimum spawn duration; that is only a floor. The real clear time is longer — waves never overlap, every enemy has to be killed and travel — so set the value from the probe row for the plan that should meet it. |
 | `coreAbove` | health ≥ 1 | Keep at least N core health | Must stay below `coreHealth`, so it can never duplicate `noLeaks`. |
 
 Because stars are `1 + met`, a campaign level with two goals has an unbroken
@@ -505,9 +505,40 @@ run, which is why that level's second goal is a `deadlineSeconds` instead. Check
 a new tower cap by replaying the level with exactly that many towers:
 `tool/balance_probe.dart` fills every pad, so it cannot answer this on its own.
 
-Status: the goals are authored and validated now; the star rule, HUD and result
-lines that read them land with V2-3. Until then the shipped build still rates
-core health and does not show the goals.
+Status: shipped in V2-3. `LevelRating` awards `1 + met` stars (a defeat is 0),
+`LevelSession.objectiveStatuses` judges each goal from the run, and the HUD
+(`Goals n/2`), the pause panel, the result panel and the picker all read that one
+status list. Save v4 stores how many goals each run met. The opening levels are
+pinned to a three-star plan in `balance_regression_test`, and
+`dart run tool/balance_probe.dart` prints goals met and stars on every row.
+
+### Difficulties
+
+`assets/data/difficulties.json` declares one profile per shipped mode (D65):
+
+```json
+{ "profiles": [
+  { "difficulty": "normal", "waveCountPercent": 100, "startingGoldPercent": 100 },
+  { "difficulty": "hard", "waveCountPercent": 125, "startingGoldPercent": 90 }
+] }
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `difficulty` | `normal` or `hard` | Closed set; an unknown name is a format error, and every mode needs exactly one entry. |
+| `waveCountPercent` | integer > 0 | Percentage applied to every wave group's enemy count. A group never drops below 1 enemy. |
+| `startingGoldPercent` | integer > 0 | Percentage applied to `startingGold` with integer arithmetic (`gold * percent ~/ 100`), so no gold value is ever fractional. |
+
+Everything else about a level — core health, objectives, wave pacing — is
+authored once and runs unchanged on both modes. Hard is campaign-only: the
+endless run climbs through its own composer and the daily challenge plays the
+authored level on Normal. `LevelRepository.load(..., profile:)` applies the
+profile, so the level that validates is the level that runs:
+`tool/validate_content.dart` and `content_assets_test` both check every shipped
+level under every profile, and each mode must still start with enough gold to
+build a tower. A percentage moves balance on all fifteen levels at once — run
+`dart run tool/balance_probe.dart` and `--difficulty=hard`, then re-pin both
+tables in the same change.
 
 ### Adding a level
 

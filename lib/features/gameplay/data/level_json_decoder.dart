@@ -27,13 +27,17 @@ abstract final class LevelJsonDecoder {
         'endlessCountGrowth',
         fallback: LevelDefinition.defaultEndlessCountGrowth,
       ),
-      objectives: _decodeObjectives(root['objectives']),
+      objectives: decodeObjectives(root['objectives']),
     );
   }
 
   /// Decodes the optional goal list, including the rule that a value belongs
   /// only to the kinds that need one (D68).
-  static List<LevelObjective> _decodeObjectives(Object? value) {
+  ///
+  /// Public because the campaign mirrors each level's goals so the picker can
+  /// render them without loading fifteen bundles; one decoder is what keeps the
+  /// mirror and the level file from accepting different shapes.
+  static List<LevelObjective> decodeObjectives(Object? value) {
     if (value == null) {
       return const [];
     }

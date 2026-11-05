@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/enemy_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/level_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/map_definition.dart';
@@ -15,12 +16,19 @@ class LevelBundle {
     required this.map,
     required this.enemies,
     required this.towers,
+    this.difficulty = Difficulty.normal,
   });
 
+  /// The level as this attempt plays it; already scaled to [difficulty], so the
+  /// session never learns that difficulty exists (D65).
   final LevelDefinition level;
   final MapDefinition map;
   final EnemyCatalog enemies;
 
   /// Towers the player may build during this level.
   final TowerCatalog towers;
+
+  /// Which mode produced [level]. Carried for records and labels only — the
+  /// simulation reads [level] and nothing else.
+  final Difficulty difficulty;
 }

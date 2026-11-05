@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:up_tower_defense/features/gameplay/data/content_catalog.dart';
+import 'package:up_tower_defense/features/gameplay/data/difficulty_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/enemy_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/level_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/map_repository.dart';
@@ -201,6 +202,39 @@ void main() {
       }
     },
   );
+
+  test('every shipped level stays buildable on every difficulty', () async {
+    // D65's gate: the profile scales starting gold, so "affords a tower" has
+    // to be re-checked per shipped mode rather than on the authored number
+    // alone. Loading through the repository also re-runs `LevelValidator` on
+    // the transformed level, which is the half a gold assertion would miss.
+    final profiles = await DifficultyRepository().load();
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final levelAssets = await _assetsUnder(manifest, 'assets/data/levels/');
+    final repository = LevelRepository(
+      mapRepository: MapRepository(),
+      enemyRepository: EnemyRepository(),
+      towerRepository: TowerRepository(),
+    );
+
+    for (final entry in profiles.entries) {
+      for (final asset in levelAssets) {
+        final bundle = await repository.load(asset, profile: entry.value);
+
+        expect(bundle.difficulty, entry.key, reason: asset);
+        expect(bundle.level.objectives, hasLength(2), reason: asset);
+        expect(
+          bundle.towers.all.any(
+            (tower) => tower.isAffordableWith(bundle.level.startingGold),
+          ),
+          isTrue,
+          reason:
+              '$asset on ${entry.key.label} starts with '
+              '${bundle.level.startingGold} gold, too little to build anything',
+        );
+      }
+    }
+  });
 
   test('the endless level loads, validates and starts buildable', () async {
     final repository = LevelRepository(

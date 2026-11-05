@@ -87,6 +87,22 @@ class LevelObjective {
     };
   }
 
+  /// Value equality on the rule and its threshold.
+  ///
+  /// Two levels that declare the same goal are the same goal: the content gate
+  /// compares an authored level's list with the campaign's mirror of it, and
+  /// the picker must not differ from the scored rule because one side was
+  /// decoded twice.
+  @override
+  bool operator ==(Object other) {
+    return other is LevelObjective &&
+        other.kind == kind &&
+        other.value == value;
+  }
+
+  @override
+  int get hashCode => Object.hash(kind, value);
+
   @override
   String toString() => 'LevelObjective(${kind.wireName}, value: $value)';
 }

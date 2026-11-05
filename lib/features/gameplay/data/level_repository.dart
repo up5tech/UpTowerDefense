@@ -9,6 +9,7 @@ import 'package:up_tower_defense/features/gameplay/data/level_json_decoder.dart'
 import 'package:up_tower_defense/features/gameplay/data/map_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/tower_repository.dart';
 import 'package:up_tower_defense/features/gameplay/domain/level_validation.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/level_definition.dart';
 
 /// Loads a level together with the map and enemy catalog it references.
@@ -35,12 +36,20 @@ class LevelRepository {
   ///
   /// A level whose `mapId` is not in the catalog, or whose waves reference an
   /// unknown enemy, fails here instead of at spawn time.
-  Future<LevelBundle> load(String assetPath) async {
+  ///
+  /// [profile] is an explicit argument, never an ambient read: that is what lets
+  /// the endless run and every fixture stay on Normal while a campaign attempt
+  /// takes Hard, and it keeps the mode out of the session entirely — the
+  /// definition handed to `LevelSession` is already the tuned one (D65).
+  Future<LevelBundle> load(
+    String assetPath, {
+    DifficultyProfile profile = DifficultyProfile.normal,
+  }) async {
     final source = await readAssetText(_bundle, assetPath);
 
     final LevelDefinition level;
     try {
-      level = LevelJsonDecoder.decode(source);
+      level = profile.applyTo(LevelJsonDecoder.decode(source));
     } on ContentFormatException catch (error) {
       throw ContentLoadException(assetPath, error.message);
     }
@@ -75,6 +84,7 @@ class LevelRepository {
       map: map,
       enemies: enemies,
       towers: towers,
+      difficulty: profile.difficulty,
     );
   }
 }

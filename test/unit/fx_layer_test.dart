@@ -87,6 +87,18 @@ void main() {
     expect(still.effects.single.rise, 0);
   });
 
+  test('reduced motion keeps the splash boundary, not just the fade', () {
+    final layer = FxLayer(reducedMotion: true);
+    layer.publish([_event(LevelEventKind.hit, radius: 70)]);
+    layer.update(0.05);
+
+    final view = layer.effects.single;
+    // The ring still reports which enemies the shell caught: freezing motion
+    // must not cost the fact the cue exists to show (V2-5).
+    expect(view.blastRadius, closeTo(70, 0.001));
+    expect(view.radius, greaterThan(0));
+  });
+
   test('a splash cue carries the blast radius the rule used', () {
     final layer = FxLayer();
     layer.publish([_event(LevelEventKind.hit, radius: 70)]);

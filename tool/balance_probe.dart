@@ -1,6 +1,6 @@
 // Development balance probe.
 //
-//   dart run tool/balance_probe.dart
+//   dart run tool/balance_probe.dart [--difficulty=hard]
 //
 // Runs every campaign level headlessly through the real `LevelSession` under a
 // set of fixed build strategies and prints how each one fared — outcome, core
@@ -9,6 +9,11 @@
 // with numbers instead of opinion. The first table also reports each pad's
 // distance to the route against every tower's base range, using the same
 // geometry the targeting rule uses, which answers "can this pad fire at all".
+//
+// The difficulty argument applies the same profile `LevelRepository` would, so
+// the probe measures the mode the game actually ships rather than a guess at
+// it (D65). Stars are reported beside each outcome, which is how a three-star
+// plan can be pointed at instead of asserted.
 //
 // Pure Dart, no Flutter and no AssetBundle: content is read from disk, the same
 // rule `validate_content.dart` follows, so it runs in a terminal or in CI.
@@ -21,12 +26,15 @@
 import 'dart:io';
 
 import 'package:up_tower_defense/features/campaign/data/campaign_json_decoder.dart';
+import 'package:up_tower_defense/features/campaign/domain/level_rating.dart';
+import 'package:up_tower_defense/features/gameplay/data/difficulty_json_decoder.dart';
 import 'package:up_tower_defense/features/gameplay/data/enemy_json_decoder.dart';
 import 'package:up_tower_defense/features/gameplay/data/level_json_decoder.dart';
 import 'package:up_tower_defense/features/gameplay/data/map_json_decoder.dart';
 import 'package:up_tower_defense/features/gameplay/data/tower_json_decoder.dart';
 import 'package:up_tower_defense/features/gameplay/domain/level_session.dart';
 import 'package:up_tower_defense/features/gameplay/domain/map_geometry.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/enemy_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/level_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/map_definition.dart';
@@ -137,6 +145,17 @@ const Map<String, Map<String, List<(String, String)>>> _strategies = {
       ('pad_g', 'frost'),
     ],
   },
+  // A deliberately under-built plan for the opening levels, which are the ones
+  // whose goals a player meets first. Two pads only, so it satisfies a
+  // `maxTowers` goal of 2 or 3 — the cap is an upper bound, not a target — and
+  // it exists to answer "can the goal pair actually be met?" rather than "is
+  // the level winnable with every pad" (D68). Keyed by level id because the
+  // cap differs per level on one map; every other strategy keys by map.
+  'capped starter': {
+    'meadow_01': [('pad_a', 'ranger'), ('pad_c', 'ranger')],
+    'meadow_02': [('pad_a', 'ranger'), ('pad_c', 'ranger')],
+    'meadow_03': [('pad_a', 'ranger'), ('pad_c', 'ranger')],
+  },
   // Entry-zone pads first, every slot a ranger. Kept after `frost control`
   // moved to a late-frost build (whose matched control is now `rangers only`,
   // whose pad sequence it copies) because it documents the one confound every
@@ -181,6 +200,9 @@ class _RunResult {
     required this.goldEarned,
     required this.elapsed,
     required this.towerCount,
+    required this.objectivesMet,
+    required this.objectiveCount,
+    required this.stars,
   });
 
   final bool victory;
@@ -190,9 +212,15 @@ class _RunResult {
   final int goldEarned;
   final double elapsed;
   final int towerCount;
+  final int objectivesMet;
+  final int objectiveCount;
+  final int stars;
 }
 
-void main() {
+void main(List<String> args) {
+  final difficulty = _difficultyFromArgs(args);
+  final profile = _profileFor(difficulty);
+
   final maps = _loadMaps();
   final enemies = _loadEnemies();
   final towers = _loadTowers();
@@ -208,8 +236,8 @@ void main() {
 
   stdout.writeln();
   stdout.writeln(
-    'Simulated outcomes (naive fill-then-upgrade policy, waves started as '
-    'soon as allowed):',
+    'Simulated outcomes on ${difficulty.label} ($profile): '
+    'naive fill-then-upgrade policy, waves started as soon as allowed:',
   );
   stdout.writeln(
     [
@@ -221,6 +249,8 @@ void main() {
       'kills'.padLeft(6),
       'gold'.padLeft(6),
       'time'.padLeft(7),
+      'goals'.padLeft(7),
+      'stars'.padLeft(7),
     ].join(),
   );
 
@@ -236,13 +266,14 @@ void main() {
       continue;
     }
     for (final strategy in _strategies.entries) {
-      final plan = strategy.value[map.id];
+      // Level-keyed first: a goal cap is per level, so an under-built plan
+      // names the levels it applies to instead of the map they share.
+      final plan = strategy.value[level.id] ?? strategy.value[map.id];
       if (plan == null) {
-        stdout.writeln('${level.id}: no plan for map ${map.id}');
         continue;
       }
       final result = _run(
-        level: level,
+        level: profile.applyTo(level),
         map: map,
         enemyCatalog: enemyCatalog,
         towerCatalog: towerCatalog,
@@ -259,6 +290,9 @@ void main() {
           result.kills.toString().padLeft(6),
           result.goldEarned.toString().padLeft(6),
           '${result.elapsed.toStringAsFixed(0)}s'.padLeft(7),
+          '${result.objectivesMet}/${result.objectiveCount}'.padLeft(7),
+          '${result.stars}${result.stars == LevelRating.maxStars ? '*' : ' '}'
+              .padLeft(7),
         ].join(),
       );
     }
@@ -298,15 +332,59 @@ _RunResult _run({
     }
   }
 
+  final objectives = session.objectiveStatuses;
+  final victory = session.phase == LevelPhase.victory;
   return _RunResult(
-    victory: session.phase == LevelPhase.victory,
+    victory: victory,
     coreHealth: session.coreHealth,
     leaks: session.leaks,
     kills: session.kills,
     goldEarned: session.goldEarned,
     elapsed: session.elapsed,
     towerCount: session.towerCount,
+    objectivesMet: session.objectivesMet,
+    objectiveCount: objectives.length,
+    stars: LevelRating.starsForRun(
+      victorious: victory,
+      coreHealth: session.coreHealth,
+      maxCoreHealth: level.coreHealth,
+      objectives: objectives,
+    ),
   );
+}
+
+/// `--difficulty=hard`, defaulting to the always-available Normal.
+Difficulty _difficultyFromArgs(List<String> args) {
+  for (final arg in args) {
+    if (!arg.startsWith('--difficulty=')) {
+      continue;
+    }
+    final name = arg.substring('--difficulty='.length);
+    final difficulty = Difficulty.fromWireName(name);
+    if (difficulty == null) {
+      stderr.writeln(
+        'unknown difficulty "$name"; expected one of '
+        '${Difficulty.values.map((value) => value.wireName).join(', ')}',
+      );
+      exit(64);
+    }
+    return difficulty;
+  }
+  return Difficulty.normal;
+}
+
+/// The same profile `LevelRepository` would apply, read from the shipped file.
+DifficultyProfile _profileFor(Difficulty difficulty) {
+  final profiles = DifficultyJsonDecoder.decode(
+    File('$_dataDir/difficulties.json').readAsStringSync(),
+  );
+  for (final profile in profiles) {
+    if (profile.difficulty == difficulty) {
+      return profile;
+    }
+  }
+  stderr.writeln('no profile authored for ${difficulty.wireName}');
+  exit(65);
 }
 
 void _act(

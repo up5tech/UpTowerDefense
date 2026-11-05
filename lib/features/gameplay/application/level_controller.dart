@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:up_tower_defense/features/gameplay/domain/level_session.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/targeting_policy.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_definition.dart';
+import 'package:up_tower_defense/features/gameplay/domain/objective_status.dart';
 import 'package:up_tower_defense/features/gameplay/domain/tower_build_result.dart';
 import 'package:up_tower_defense/features/gameplay/domain/tower_sell_result.dart';
 import 'package:up_tower_defense/features/gameplay/domain/tower_upgrade_result.dart';
@@ -32,6 +33,7 @@ class LevelHudState {
     required this.transitionSecondsRemaining,
     required this.isPaused,
     required this.speed,
+    this.objectives = const [],
   });
 
   final int coreHealth;
@@ -72,6 +74,20 @@ class LevelHudState {
   /// Simulation speed multiplier: 1 or 2.
   final int speed;
 
+  /// Where each goal the level declares stands right now (D68).
+  ///
+  /// Coarse and event-driven like everything else here — the list only changes
+  /// when a goal's state does — and it is the single value the `Goals n/2` chip,
+  /// the pause panel, the result panel and the star rule read, so a HUD showing
+  /// 2/2 cannot award two stars. Empty for a level with no goals.
+  final List<LevelObjectiveStatus> objectives;
+
+  /// Goals the run satisfies.
+  int get objectivesMet => LevelObjectives.metCount(objectives);
+
+  /// Goals the level declares.
+  int get objectiveCount => objectives.length;
+
   bool get isDefeated => phase == LevelPhase.defeat;
 
   bool get isVictorious => phase == LevelPhase.victory;
@@ -106,7 +122,8 @@ class LevelHudState {
         other.goldEarned == goldEarned &&
         other.transitionSecondsRemaining == transitionSecondsRemaining &&
         other.isPaused == isPaused &&
-        other.speed == speed;
+        other.speed == speed &&
+        listEquals(other.objectives, objectives);
   }
 
   @override
@@ -127,6 +144,7 @@ class LevelHudState {
     transitionSecondsRemaining,
     isPaused,
     speed,
+    Object.hashAll(objectives),
   );
 
   @override
@@ -294,6 +312,7 @@ class LevelController extends ChangeNotifier {
       transitionSecondsRemaining: session.transitionRemainingSeconds.ceil(),
       isPaused: paused,
       speed: speed,
+      objectives: session.objectiveStatuses,
     );
   }
 }

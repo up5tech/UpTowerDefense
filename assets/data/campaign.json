@@ -4,33 +4,33 @@
       "id": "meadow",
       "displayName": "Meadow Reach",
       "levels": [
-        { "id": "meadow_01", "displayName": "First Light" },
-        { "id": "meadow_02", "displayName": "Quick Feet" },
-        { "id": "meadow_03", "displayName": "Two Roads" },
-        { "id": "meadow_04", "displayName": "Held Line" },
-        { "id": "meadow_05", "displayName": "Gatekeeper" }
+        { "id": "meadow_01", "displayName": "First Light", "objectives": [{ "kind": "noLeaks" }, { "kind": "maxTowers", "value": 2 }] },
+        { "id": "meadow_02", "displayName": "Quick Feet", "objectives": [{ "kind": "maxTowers", "value": 2 }, { "kind": "deadlineSeconds", "value": 70 }] },
+        { "id": "meadow_03", "displayName": "Two Roads", "objectives": [{ "kind": "coreAbove", "value": 14 }, { "kind": "deadlineSeconds", "value": 85 }] },
+        { "id": "meadow_04", "displayName": "Held Line", "objectives": [{ "kind": "maxTowers", "value": 2 }, { "kind": "coreAbove", "value": 14 }] },
+        { "id": "meadow_05", "displayName": "Gatekeeper", "objectives": [{ "kind": "maxTowers", "value": 3 }, { "kind": "coreAbove", "value": 12 }] }
       ]
     },
     {
       "id": "ember",
       "displayName": "Ember Pass",
       "levels": [
-        { "id": "ember_01", "displayName": "Cinder Gate" },
-        { "id": "ember_02", "displayName": "Ash Run" },
-        { "id": "ember_03", "displayName": "Anvil" },
-        { "id": "ember_04", "displayName": "Furnace" },
-        { "id": "ember_05", "displayName": "The Warden" }
+        { "id": "ember_01", "displayName": "Cinder Gate", "objectives": [{ "kind": "coreAbove", "value": 12 }, { "kind": "deadlineSeconds", "value": 75 }] },
+        { "id": "ember_02", "displayName": "Ash Run", "objectives": [{ "kind": "maxTowers", "value": 3 }, { "kind": "coreAbove", "value": 11 }] },
+        { "id": "ember_03", "displayName": "Anvil", "objectives": [{ "kind": "maxTowers", "value": 3 }, { "kind": "deadlineSeconds", "value": 160 }] },
+        { "id": "ember_04", "displayName": "Furnace", "objectives": [{ "kind": "noLeaks" }, { "kind": "maxTowers", "value": 3 }] },
+        { "id": "ember_05", "displayName": "The Warden", "objectives": [{ "kind": "maxTowers", "value": 3 }, { "kind": "coreAbove", "value": 8 }] }
       ]
     },
     {
       "id": "hollow",
       "displayName": "Hollow Court",
       "levels": [
-        { "id": "hollow_01", "displayName": "Courtyard" },
-        { "id": "hollow_02", "displayName": "Crossfire" },
-        { "id": "hollow_03", "displayName": "The Long Watch" },
-        { "id": "hollow_04", "displayName": "Half Turn" },
-        { "id": "hollow_05", "displayName": "Warden's Court" }
+        { "id": "hollow_01", "displayName": "Courtyard", "objectives": [{ "kind": "coreAbove", "value": 18 }, { "kind": "maxTowers", "value": 3 }] },
+        { "id": "hollow_02", "displayName": "Crossfire", "objectives": [{ "kind": "coreAbove", "value": 14 }, { "kind": "maxTowers", "value": 4 }] },
+        { "id": "hollow_03", "displayName": "The Long Watch", "objectives": [{ "kind": "coreAbove", "value": 14 }, { "kind": "deadlineSeconds", "value": 330 }] },
+        { "id": "hollow_04", "displayName": "Half Turn", "objectives": [{ "kind": "coreAbove", "value": 12 }, { "kind": "deadlineSeconds", "value": 330 }] },
+        { "id": "hollow_05", "displayName": "Warden's Court", "objectives": [{ "kind": "coreAbove", "value": 6 }, { "kind": "deadlineSeconds", "value": 330 }] }
       ]
     }
   ]

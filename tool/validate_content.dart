@@ -16,6 +16,7 @@ import 'package:up_tower_defense/features/campaign/data/campaign_json_decoder.da
 import 'package:up_tower_defense/features/campaign/domain/campaign_definition.dart';
 import 'package:up_tower_defense/features/campaign/domain/campaign_validation.dart';
 import 'package:up_tower_defense/features/gameplay/data/content_catalog.dart';
+import 'package:up_tower_defense/features/gameplay/data/difficulty_json_decoder.dart';
 import 'package:up_tower_defense/features/gameplay/data/enemy_json_decoder.dart';
 import 'package:up_tower_defense/features/gameplay/data/level_json_decoder.dart';
 import 'package:up_tower_defense/features/gameplay/data/map_json_decoder.dart';
@@ -23,6 +24,7 @@ import 'package:up_tower_defense/features/gameplay/data/tower_json_decoder.dart'
 import 'package:up_tower_defense/features/gameplay/domain/enemy_validation.dart';
 import 'package:up_tower_defense/features/gameplay/domain/level_validation.dart';
 import 'package:up_tower_defense/features/gameplay/domain/map_validation.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/enemy_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/level_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/map_definition.dart';
@@ -37,18 +39,23 @@ void main() {
   final maps = _loadMaps();
   final enemies = _loadEnemies();
   final towers = _loadTowers();
+  final profiles = _loadDifficulties();
   final levels = _loadLevels(maps, enemies);
   _loadEndless(maps, enemies);
   final campaign = _loadCampaign(levels.keys.toSet());
 
+  _checkProfiles(profiles, levels, maps, enemies, towers);
+
   if (campaign != null) {
     _checkCampaignNames(campaign, levels);
+    _checkCampaignGoals(campaign, levels);
   }
 
   if (_problems.isEmpty) {
     stdout.writeln(
       'Content OK — ${maps.length} maps, ${enemies.length} enemies, '
       '${towers.length} towers, ${levels.length} levels, '
+      '${profiles.length} difficulties, '
       '${campaign?.regions.length ?? 0} regions.',
     );
     exit(0);
@@ -91,6 +98,101 @@ Map<String, MapDefinition> _loadMaps() {
   }
 
   return maps;
+}
+
+/// Loads the shipped difficulty profiles (D65).
+///
+/// Every mode [Difficulty] names must be authored: the route, the save key and
+/// the picker all assume it exists, so a missing one is a content problem rather
+/// than something to discover when a player taps Hard.
+Map<Difficulty, DifficultyProfile> _loadDifficulties() {
+  const scope = 'difficulties.json';
+  final file = File('$_dataDir/difficulties.json');
+  if (!file.existsSync()) {
+    _problems.add('$scope: file is missing');
+    return const {};
+  }
+  try {
+    final profiles = DifficultyJsonDecoder.decode(file.readAsStringSync());
+    final byDifficulty = <Difficulty, DifficultyProfile>{
+      for (final profile in profiles) profile.difficulty: profile,
+    };
+    for (final difficulty in Difficulty.values) {
+      if (!byDifficulty.containsKey(difficulty)) {
+        _problems.add('$scope: no profile for "${difficulty.wireName}"');
+      }
+    }
+    return byDifficulty;
+  } on Object catch (error) {
+    _problems.add('$scope: $error');
+    return const {};
+  }
+}
+
+/// Validates every level under every shipped profile.
+///
+/// The profile scales wave counts and starting gold, so the authored level is no
+/// longer the one that runs: each tuned copy is re-validated, and each has to
+/// leave enough gold to build at least one tower (D65).
+void _checkProfiles(
+  Map<Difficulty, DifficultyProfile> profiles,
+  Map<String, LevelDefinition> levels,
+  Map<String, MapDefinition> maps,
+  List<EnemyDefinition> enemies,
+  List<TowerDefinition> towers,
+) {
+  final catalog = EnemyCatalog(enemies);
+  for (final entry in profiles.entries) {
+    for (final level in levels.values) {
+      final map = maps[level.mapId];
+      if (map == null) {
+        continue;
+      }
+      final scope = 'levels/${level.id} on ${entry.key.wireName}';
+      final tuned = entry.value.applyTo(level);
+      _report(
+        scope,
+        const LevelValidator()
+            .validate(level: tuned, map: map, enemies: catalog)
+            .issues,
+      );
+      if (!towers.any((tower) => tower.isAffordableWith(tuned.startingGold))) {
+        _problems.add(
+          '$scope: starts with ${tuned.startingGold} gold, too little to build '
+          'anything',
+        );
+      }
+    }
+  }
+}
+
+/// The campaign mirrors each level's goals for the picker, so the two lists must
+/// match or the picker would describe goals the level does not score (D75).
+void _checkCampaignGoals(
+  CampaignDefinition campaign,
+  Map<String, LevelDefinition> levels,
+) {
+  for (final levelId in campaign.levelIds) {
+    final level = levels[levelId];
+    final entry = campaign.levelFor(levelId);
+    if (level == null || entry == null) {
+      continue;
+    }
+    final mirrored = [
+      for (final objective in entry.objectives)
+        '${objective.kind.wireName}:${objective.value}',
+    ].join(',');
+    final scored = [
+      for (final objective in level.objectives)
+        '${objective.kind.wireName}:${objective.value}',
+    ].join(',');
+    if (mirrored != scored) {
+      _problems.add(
+        'campaign.json: "$levelId" lists goals [$mirrored] but the level file '
+        'scores [$scored]',
+      );
+    }
+  }
 }
 
 List<EnemyDefinition> _loadEnemies() {

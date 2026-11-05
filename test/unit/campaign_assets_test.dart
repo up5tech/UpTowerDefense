@@ -16,6 +16,7 @@ import 'package:up_tower_defense/features/gameplay/data/level_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/map_repository.dart';
 import 'package:up_tower_defense/features/gameplay/data/tower_repository.dart';
 import 'package:up_tower_defense/features/gameplay/domain/map_geometry.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/level_objective.dart';
 
 import '../helpers/save_overrides.dart';
 
@@ -157,6 +158,29 @@ void main() {
       );
 
       expect(level.waves.length, greaterThanOrEqualTo(3), reason: levelId);
+    }
+  });
+
+  test("the campaign mirrors each level's goals exactly", () {
+    // The picker lists the goals from the campaign entry, without loading a
+    // bundle. That copy is only honest if it is byte-for-byte the list the
+    // level is scored on, so a goal edit that skips one file fails here (D68).
+    for (final region in campaign.regions) {
+      for (final level in region.levels) {
+        final scored = bundles[level.id]!.level.objectives;
+        String describe(Iterable<LevelObjective> goals) => goals
+            .map((goal) => '${goal.kind.wireName}:${goal.value}')
+            .join(',');
+
+        expect(
+          describe(level.objectives),
+          describe(scored),
+          reason:
+              '${level.id}: the picker would describe goals the level does not '
+              'score',
+        );
+        expect(level.objectives, hasLength(2), reason: level.id);
+      }
     }
   });
 

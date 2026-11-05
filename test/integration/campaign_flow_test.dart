@@ -106,6 +106,7 @@ void main() {
     );
 
     // A fresh campaign holds only its first level.
+    await tester.ensureVisible(find.text('Campaign'));
     await tester.tap(find.text('Campaign'));
     await tester.pumpAndSettle();
     expect(find.text('Clear Test Meadow to unlock'), findsOneWidget);
@@ -162,6 +163,8 @@ void main() {
     await tester.tap(find.text('Menu'));
     await tester.pumpAndSettle();
     expect(find.text(AppInfo.name), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Campaign'));
 
     await tester.tap(find.text('Campaign'));
     await tester.pumpAndSettle();

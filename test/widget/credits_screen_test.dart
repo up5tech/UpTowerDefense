@@ -13,6 +13,8 @@ void main() {
   ) async {
     await pumpApp(tester);
 
+    await tester.ensureVisible(find.text('Credits'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Credits'));
     await tester.pumpAndSettle();
 

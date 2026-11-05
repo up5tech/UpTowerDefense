@@ -1,7 +1,9 @@
 name: up_tower_defense
 description: "UpTowerDefense — offline-first 2D tower defense game built with Flutter and Flame."
 publish_to: 'none'
-version: 0.1.0+1
+# 2.0.0 at V2-6 (V2_PLAN §5). The build number stays monotonic per store
+# upload: a store build must be strictly higher than anything already uploaded.
+version: 2.0.0+2
 
 environment:
   # Flutter/Dart 3.13.7 includes the required Android TLS certificate fix.
@@ -62,6 +64,7 @@ flutter:
     - docs/ASSET_ATTRIBUTIONS.md
     - assets/audio/
     - assets/data/campaign.json
+    - assets/data/difficulties.json
     - assets/data/endless.json
     - assets/data/enemies/
     - assets/data/levels/

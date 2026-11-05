@@ -5,6 +5,10 @@ Repeatable manual QA scenarios for the Phase 12 acceptance criteria in
 expected result and the acceptance criterion it covers, so any run produces the
 same evidence twice.
 
+Sections 2–8 are the Phase 12 pass. Sections 12–15 add the v2 surfaces V2-6
+requires — the daily challenge, difficulty switching, achievements and a save
+upgrade from 1.0 — and §16 records the V2-6 run itself.
+
 Automated coverage is *not* repeated here: `flutter test`, `flutter analyze`,
 `dart format`, `tool/validate_content.dart`, the two stress tests
 (`stress_frame_cost_test` for simulation, `stress_fx_cost_test` for effects) and
@@ -209,6 +213,9 @@ data-loss defect remains** — a known issue may ship only if it is neither.
 
 | Severity | Scenario | Description | Build | Status |
 |----------|----------|-------------|-------|--------|
+| High | — | **Store distribution.** The `2.0.0+2` APK and AAB are now **release-signed** (`CN=UpTowerDefense`, verified by `apksigner`), but nothing has been uploaded, and no iOS archive/TestFlight export exists (Apple account required). The 2.0 build is distributable on Android, not yet distributed. | `2.0.0+2`, 2026-11-05 | Open — V2-6 gate. Not a gameplay defect |
+| Medium | U1–U5 | **Upgrade over 1.0 not executed on a device.** No 1.0 artifact exists on this host and no physical device is attached, so the over-install was not performed. Automated half: `save_codec_test` (v1 → v5 pairs), `save_repository_test` (recovery group), `save_v4_test`, `save_v5_test`. | `2.0.0+2`, 2026-11-05 | Open — V2-6 gate |
+| Low | S1–S3 | Release-mode GPU frame pacing and thermal/memory behaviour are still unmeasured: the only AVD rasterises in software (`swiftshader_indirect`). The host-side simulation and effects baselines in the table above are not a substitute. | `2.0.0+2`, 2026-11-05 | Open — hardware pass |
 | Low | A1–A4 | Music and SFX audibility is unverified: this host neither monitors the emulator's audio output nor has a Bluetooth route, so only player lifecycle (`dumpsys audio`) was measurable. | `e870fe2` release, 2026-11-02 | Open — verify on hardware in the V2-6 pass |
 | Low | O1 | On Android 12+ the system splash paints white instead of the palette `#0D1117`: `values/styles.xml` sets a `windowBackground` *drawable*, which the platform's splash screen cannot use, and no `values-v31` theme sets `windowSplashScreenBackground`. One white flash before the first Flutter frame. | `e870fe2` release, 2026-11-02 | Open — cosmetic |
 
@@ -230,3 +237,70 @@ Ticked against the 2026-11-02 run (§9) unless a note says otherwise.
 
 Not yet satisfiable on this host: everything in §9 "Not produced on this host".
 They are the V2-6 hardware pass's input, not a Phase 12 regression.
+
+## 12. Daily challenge — covers D66/D70 and V2-3's daily acceptance criteria
+
+Preconditions: airplane mode on, and a save with at least one campaign level
+cleared.
+
+| # | Steps | Expected |
+|---|---|---|
+| D1 | Open **Daily challenge** from the main menu. | The selected level opens straight into gameplay on its authored map, waves and goals. Nothing asks the network: the date is read locally and turned into a seed, and the level is chosen from campaign order. |
+| D2 | Win the daily, then open **Progress**. | "Daily best" names today's level and the stars it earned. Campaign totals, stars and unlocks are unchanged on the same screen and in the picker (D70: a daily never writes a campaign result). |
+| D3 | Force-kill the app on the same date, relaunch, open the daily again. | The same level is selected — the seed is the local date, so the pick is stable across launches. |
+| D4 | Move the device clock past local midnight (still offline), reopen the daily. | A different date selects a level from the campaign order and starts with no result for that date. Nothing already earned changes; per-date records are additive. |
+| D5 | Start the daily and force-kill the app mid-run; relaunch. | The unfinished run is dropped: no daily record appears for the date, and no campaign result moves. |
+| D6 | (Optional, needs a clock change) Start the daily just before local midnight and finish it after. | The run finishes under the seed it began with: the selection is resolved once on entry and the screen is keyed by that date. |
+
+## 13. Difficulty switching — covers D65 and V2-3's Hard acceptance criteria
+
+| # | Steps | Expected |
+|---|---|---|
+| H1 | With fresh progress, open **Campaign**. | Normal is selected. Hard is visible but disabled, with the reason "Hard opens for each region once that region is cleared on Normal" — a hidden control would leave a player guessing whether a second pass exists. |
+| H2 | Clear every level of Meadow Reach on Normal, then return to the picker. | Hard opens for Meadow Reach only; the other regions' Hard levels stay locked until those regions are cleared on Normal. |
+| H3 | Play a Meadow Reach level on Hard and win; return to the picker. | That level shows its Hard best beside its Normal best. Campaign totals still name the mode they count (Normal by default), and the menu's summary line matches the picker's. |
+| H4 | Force-kill mid-level on Hard, relaunch, reopen the picker. | The last recorded Hard result survives, the Normal result is untouched, and both are rendered for the level. |
+| H5 | Open the same level on both modes and compare the HUD, the goals and the gold. | Core health and the two goals are identical on both modes; Hard fields 125% wave counts and 90% starting gold, so the wave counter and spawn volume are visibly higher and the opening gold lower. A `maxTowers` goal keeps the same cap on both modes. |
+| H6 | Compare a level's stars across modes for the same play. | Each mode records its own stars; a Hard best never overwrites the Normal best, and the star total on each summary counts one mode only. |
+
+## 14. Achievements and the progress screen — covers D67 and V2-4's acceptance criteria
+
+| # | Steps | Expected |
+|---|---|---|
+| C1 | Fresh save: open **Progress**. | Campaign totals read 0 of 15 levels and 0 of 45 stars; endless best "Not played yet"; the daily line says today's level is not finished; all ten achievements are listed as Locked with their descriptions readable. |
+| C2 | Win one campaign level, then reopen Progress. | "First clear" is Earned — and "Three of three" too if the run scored three stars — and the header count rises by the number actually earned. |
+| C3 | Replay that level twice and restart once, then reopen Progress. | The earned set is identical: a restart or replay cannot double-award, because only ids missing from the stored set are written. |
+| C4 | Win a level with the core untouched, then clear every level of one region on Normal. | "Untouched" and "Region cleared" are Earned; the screen's note still says campaign achievements count Normal results only. |
+| C5 | Force-kill the app right after an achievement is earned; relaunch; open Progress. | The achievement is still Earned — the id lives in the save, it is not recomputed from a live session. |
+| C6 | Reach wave 10 in **Endless**, then finish a **Daily challenge**. | "Wave ten" and "Daily done" are Earned; campaign totals and stars do not move (a daily records only its date, D70). |
+
+## 15. Save upgrade from 1.0 — covers V2-6's save acceptance criterion
+
+Preconditions: the 1.0 release build installed on the device with real progress
+(several levels won with stars, settings changed, an endless best recorded),
+then the 2.0 build installed **over it** without uninstalling.
+
+| # | Steps | Expected |
+|---|---|---|
+| U1 | Launch 2.0 after the over-install and open **Campaign**. | Every 1.0 win, unlock and best star is present; every level that was playable in 1.0 is still open, and the campaign now shows the 15 levels of 2.0. |
+| U2 | Open **Settings**. | Music/SFX toggles and volumes, reduced motion and the haptics switch are exactly as they were in 1.0. |
+| U3 | Check **Endless** best and **Progress**. | The 1.0 endless best is shown; achievements that the stored results already satisfy read Earned (the one backfill on opening Progress); daily records start empty. |
+| U4 | Replay a level that earned 3 stars in 1.0 and finish it meeting fewer goals. | The recorded best stays 3 stars: `stars` is authoritative and never recomputed on load, so a 1.0 rating survives whatever the new objective rule would have scored (D68). |
+| U5 | Damage the save payload on a debug build (or clear one key), relaunch. | The app launches on the backup or on defaults, the menu reports the degraded load, the damaged payload is preserved, and the game stays playable and writable. |
+
+## 16. Run record — V2-6 (2026-11-05)
+
+| | |
+|---|---|
+| Build | `2.0.0+2` from this working tree; `flutter build apk --release` and `flutter build appbundle --release` (both release-signed, `CN=UpTowerDefense`) plus `flutter build ios --simulator` |
+| Automated half | `flutter analyze` clean · `dart format --set-exit-if-changed` 0 changed · `flutter test` 565 passing · `tool/validate_content.dart` Content OK (3 maps, 6 enemies, 5 towers, 15 levels, 2 difficulties, 3 regions) |
+| Balance | `tool/balance_probe.dart` on Normal and `--difficulty=hard`; both tables are in [`V2_RELEASE_REPORT.md`](V2_RELEASE_REPORT.md) and pinned by `balance_regression_test` / `balance_hard_regression_test` |
+| Networking | Release manifest still declares no permissions (`offline_guard_test` green); every scenario above assumes airplane mode |
+
+**Not produced on this host.** Sections 12–15 have not been executed on a
+device: there is no physical device or 1.0 artifact here, and no Apple team for
+an archive export. Android signing is done — the APK and AAB verify against the
+release certificate — but the automated halves named in §10's known-issues rows
+stand in for the rules, not for the over-install. V2-6 is therefore **not signed
+off**; see [`V2_RELEASE_REPORT.md`](V2_RELEASE_REPORT.md) §6 for the remaining gate
+list.

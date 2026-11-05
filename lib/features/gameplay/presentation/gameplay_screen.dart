@@ -8,21 +8,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:up_tower_defense/app/lifecycle/app_orientation.dart';
 import 'package:up_tower_defense/app/routes.dart';
+import 'package:up_tower_defense/features/campaign/application/achievement_providers.dart';
 import 'package:up_tower_defense/features/campaign/application/campaign_providers.dart';
 import 'package:up_tower_defense/features/campaign/domain/campaign_progress.dart';
 import 'package:up_tower_defense/features/campaign/domain/level_rating.dart';
 import 'package:up_tower_defense/features/gameplay/application/content_providers.dart';
+import 'package:up_tower_defense/features/gameplay/application/daily_providers.dart';
 import 'package:up_tower_defense/features/gameplay/application/endless_providers.dart';
 import 'package:up_tower_defense/features/gameplay/application/level_controller.dart';
 import 'package:up_tower_defense/features/gameplay/application/map_selection.dart';
 import 'package:up_tower_defense/features/gameplay/data/level_bundle.dart';
+import 'package:up_tower_defense/features/gameplay/domain/daily_challenge.dart';
 import 'package:up_tower_defense/features/gameplay/domain/level_session.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/build_pad.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/map_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/targeting_policy.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_definition.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_instance.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_level_stats.dart';
+import 'package:up_tower_defense/features/gameplay/domain/objective_status.dart';
 import 'package:up_tower_defense/features/gameplay/flame/flame_audio_sfx_sink.dart';
 import 'package:up_tower_defense/features/gameplay/flame/flutter_haptics_sink.dart';
 import 'package:up_tower_defense/features/gameplay/flame/game.dart';
@@ -39,6 +44,9 @@ class GameplayScreen extends ConsumerStatefulWidget {
     this.game,
     this.levelId,
     this.endless = false,
+    this.difficulty = Difficulty.normal,
+    this.daily = false,
+    this.dailyDateKey,
   });
 
   /// Injected game for tests. When null the screen loads the level and creates
@@ -53,6 +61,20 @@ class GameplayScreen extends ConsumerStatefulWidget {
   /// from [endlessBundleProvider] and the attempt records a best score instead
   /// of campaign progress.
   final bool endless;
+
+  /// Which mode this attempt runs at (D65); part of the route key, so a change
+  /// remounts the screen instead of being ignored by `_gameFor`.
+  final Difficulty difficulty;
+
+  /// Whether this attempt is today's daily challenge (D66).
+  ///
+  /// A daily run records only that date's daily result: no campaign stars, no
+  /// unlocks. The level itself is the ordinary authored one.
+  final bool daily;
+
+  /// The `yyyyMMdd` the daily selection was made for, captured when the run
+  /// opened so it keeps its seed past local midnight (D66).
+  final int? dailyDateKey;
 
   @override
   ConsumerState<GameplayScreen> createState() => _GameplayScreenState();
@@ -152,6 +174,30 @@ class _GameplayScreenState extends ConsumerState<GameplayScreen>
       _outcomeRecorded = true;
       // The core fell on wave N, so N - 1 waves were fully cleared.
       ref.read(endlessBestProvider.notifier).recordBest(hud.startedWaves - 1);
+      _refreshAchievements();
+      return;
+    }
+
+    // A daily run is scored for its date only: it must never touch campaign
+    // stars, results or unlocks (D70).
+    if (widget.daily) {
+      if (_outcomeRecorded || !hud.isVictorious) {
+        return;
+      }
+      _outcomeRecorded = true;
+      ref
+          .read(dailyResultsProvider.notifier)
+          .record(
+            DailyResult(
+              dateKey: widget.dailyDateKey ?? ref.read(dailyDateKeyProvider),
+              levelId: game.session.level.id,
+              stars: _starsFor(hud),
+              coreHealth: hud.coreHealth,
+              maxCoreHealth: hud.maxCoreHealth,
+              objectivesMet: hud.objectivesMet,
+            ),
+          );
+      _refreshAchievements();
       return;
     }
 
@@ -163,24 +209,44 @@ class _GameplayScreenState extends ConsumerState<GameplayScreen>
     final session = game.session;
     _firstClear = !ref
         .read(campaignProgressProvider)
-        .isCompleted(session.level.id);
+        .isCompleted(session.level.id, difficulty: widget.difficulty);
     ref
         .read(campaignProgressProvider.notifier)
         .record(
           LevelResult(
             levelId: session.level.id,
-            stars: LevelRating.starsFor(
-              victorious: true,
-              coreHealth: hud.coreHealth,
-              maxCoreHealth: hud.maxCoreHealth,
-            ),
+            stars: _starsFor(hud),
             coreHealth: hud.coreHealth,
             maxCoreHealth: hud.maxCoreHealth,
             wavesCleared: hud.startedWaves,
             totalWaves: hud.totalWaves,
+            difficulty: widget.difficulty,
+            objectivesMet: hud.objectivesMet,
           ),
         );
+    _refreshAchievements();
   }
+
+  /// Re-derives achievements from the just-recorded facts.
+  ///
+  /// Called from the single path that records a result — campaign, endless and
+  /// daily alike — so an achievement can only ever be earned by the run that
+  /// produced the fact, never by a screen render or a replay (D67). The notifier
+  /// stores only newly earned ids, so a second call cannot double-award.
+  void _refreshAchievements() {
+    unawaited(ref.read(achievementsProvider.notifier).refresh());
+  }
+
+  /// Stars this attempt earns.
+  ///
+  /// Read through [LevelRating.starsForRun] so the recorded stars and the ones
+  /// the result panel draws are produced by the same call (D68).
+  int _starsFor(LevelHudState hud) => LevelRating.starsForRun(
+    victorious: hud.isVictorious,
+    coreHealth: hud.coreHealth,
+    maxCoreHealth: hud.maxCoreHealth,
+    objectives: hud.objectives,
+  );
 
   /// Creates the session and game once per loaded level.
   ///
@@ -250,7 +316,9 @@ class _GameplayScreenState extends ConsumerState<GameplayScreen>
       ? endlessBundleProvider
       : widget.levelId == null
       ? levelToPlayProvider
-      : levelBundleProvider(widget.levelId!);
+      : levelBundleProvider(
+          (levelId: widget.levelId!, difficulty: widget.difficulty),
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -281,6 +349,11 @@ class _GameplayScreenState extends ConsumerState<GameplayScreen>
     ({({String id, String name})? next, bool complete}) unlockStateFor(
       String levelId,
     ) {
+      // A daily run opens nothing: its result belongs to the date, not the
+      // campaign (D70).
+      if (widget.daily) {
+        return (next: null, complete: false);
+      }
       final index = definition?.indexOf(levelId) ?? -1;
       if (index < 0) {
         return (next: null, complete: false);
@@ -292,6 +365,13 @@ class _GameplayScreenState extends ConsumerState<GameplayScreen>
           : (id: nextId, name: nextName);
       return (next: next, complete: next == null);
     }
+
+    // The best run kept for the date this attempt belongs to. A daily run keeps
+    // the date it started with, so a rollover mid-run does not move its record.
+    final dailyBest = widget.daily
+        ? ref.watch(dailyResultsProvider)[widget.dailyDateKey ??
+              ref.watch(dailyDateKeyProvider)]
+        : null;
 
     final injected = widget.game;
     if (injected != null) {
@@ -305,9 +385,17 @@ class _GameplayScreenState extends ConsumerState<GameplayScreen>
         next: unlock.next,
         campaignComplete: unlock.complete,
         endlessBest: ref.watch(endlessBestProvider),
+        difficulty: widget.difficulty,
+        daily: widget.daily,
+        dailyBest: dailyBest,
         onNext: unlock.next == null
             ? null
-            : () => context.go(AppRoutes.gameplayFor(unlock.next!.id)),
+            : () => context.go(
+                AppRoutes.gameplayFor(
+                  unlock.next!.id,
+                  difficulty: widget.difficulty,
+                ),
+              ),
       );
     }
 
@@ -325,10 +413,16 @@ class _GameplayScreenState extends ConsumerState<GameplayScreen>
               next: unlock.next,
               campaignComplete: unlock.complete,
               endlessBest: ref.watch(endlessBestProvider),
+              difficulty: widget.difficulty,
+              daily: widget.daily,
+              dailyBest: dailyBest,
               onNext: unlock.next == null
                   ? null
                   : () => context.go(
-                      AppRoutes.gameplayFor(unlock.next!.id),
+                      AppRoutes.gameplayFor(
+                        unlock.next!.id,
+                        difficulty: widget.difficulty,
+                      ),
                     ),
             );
           },
@@ -365,6 +459,9 @@ class _GameplayView extends StatelessWidget {
     this.campaignComplete = false,
     this.onNext,
     this.endlessBest = 0,
+    this.difficulty = Difficulty.normal,
+    this.daily = false,
+    this.dailyBest,
   });
 
   final UpTowerDefenseGame game;
@@ -393,6 +490,16 @@ class _GameplayView extends StatelessWidget {
   /// just challenged (0 until the first completed run).
   final int endlessBest;
 
+  /// The mode this attempt runs at; Normal is the shipped campaign and is not
+  /// labelled, so the HUD only grows a chip when it is not.
+  final Difficulty difficulty;
+
+  /// Whether this attempt is today's daily challenge.
+  final bool daily;
+
+  /// The best run kept for this daily date, or null before the first clear.
+  final DailyResult? dailyBest;
+
   @override
   Widget build(BuildContext context) {
     final controller = game.controller;
@@ -406,69 +513,129 @@ class _GameplayView extends StatelessWidget {
             left: 0,
             right: 0,
             child: SafeArea(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton.filledTonal(
-                        onPressed: onLeave,
-                        tooltip: 'Back to menu',
-                        icon: const Icon(Icons.arrow_back),
-                      ),
-                      const SizedBox(width: 12),
-                      _HudChip(label: game.session.level.displayName),
-                      const SizedBox(width: 16),
-                      ListenableBuilder(
-                        listenable: controller,
-                        builder: (context, child) {
-                          final hud = controller.hud;
-                          return Row(
-                            children: [
-                              _HudChip(
-                                icon: Icons.paid_rounded,
-                                label: '${hud.gold} g',
-                                tint: const Color(0xFF8BF0D6),
-                              ),
-                              const SizedBox(width: 8),
-                              _HudChip(
-                                icon: Icons.favorite_rounded,
-                                label: '${hud.coreHealth}/${hud.maxCoreHealth}',
-                                tint: const Color(0xFFE0A34A),
-                              ),
-                              const SizedBox(width: 8),
-                              _HudChip(
-                                icon: Icons.waves_rounded,
-                                label: hud.endless
-                                    ? 'Wave ${hud.startedWaves}'
-                                    : 'Wave '
-                                          '${hud.startedWaves}/${hud.totalWaves}',
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton.filledTonal(
-                                onPressed: hud.isOver ? null : game.togglePause,
-                                tooltip: hud.isPaused ? 'Resume' : 'Pause',
-                                icon: Icon(
-                                  hud.isPaused
-                                      ? Icons.play_arrow_rounded
-                                      : Icons.pause_rounded,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: ListenableBuilder(
+                  listenable: controller,
+                  builder: (context, child) {
+                    final hud = controller.hud;
+                    return Row(
+                      children: [
+                        IconButton.filledTonal(
+                          onPressed: onLeave,
+                          tooltip: 'Back to menu',
+                          icon: const Icon(Icons.arrow_back),
+                        ),
+                        const SizedBox(width: 8),
+                        // Facts scroll when a long level name and large text
+                        // exceed the width; the actions after the strip stay
+                        // pinned so Back, Pause and the speed toggle can never
+                        // be scrolled out of reach at 1.3× text (V2-5).
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _HudChip(
+                                  label: game.session.level.displayName,
+                                  semanticsLabel:
+                                      'Level '
+                                      '${game.session.level.displayName}',
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              _SpeedButton(
-                                speed: hud.speed,
-                                onPressed: hud.isOver
-                                    ? null
-                                    : controller.toggleSpeed,
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                                if (difficulty != Difficulty.normal) ...[
+                                  const SizedBox(width: 8),
+                                  _HudChip(
+                                    icon: Icons.local_fire_department_rounded,
+                                    label: difficulty.label,
+                                    semanticsLabel:
+                                        'Difficulty ${difficulty.label}',
+                                    tint: const Color(0xFFE0A34A),
+                                  ),
+                                ],
+                                if (daily) ...[
+                                  const SizedBox(width: 8),
+                                  const _HudChip(
+                                    icon: Icons.today_rounded,
+                                    label: 'Daily',
+                                    semanticsLabel: 'Daily challenge',
+                                  ),
+                                ],
+                                const SizedBox(width: 16),
+                                _HudChip(
+                                  icon: Icons.paid_rounded,
+                                  label: '${hud.gold} g',
+                                  semanticsLabel: 'Gold ${hud.gold}',
+                                  tint: const Color(0xFF8BF0D6),
+                                ),
+                                const SizedBox(width: 8),
+                                _HudChip(
+                                  icon: Icons.favorite_rounded,
+                                  label:
+                                      '${hud.coreHealth}/'
+                                      '${hud.maxCoreHealth}',
+                                  semanticsLabel:
+                                      'Core ${hud.coreHealth} of '
+                                      '${hud.maxCoreHealth}',
+                                  tint: const Color(0xFFE0A34A),
+                                ),
+                                const SizedBox(width: 8),
+                                _HudChip(
+                                  icon: Icons.waves_rounded,
+                                  semanticsLabel: hud.endless
+                                      ? 'Wave ${hud.startedWaves}'
+                                      : 'Wave ${hud.startedWaves} of '
+                                            '${hud.totalWaves}',
+                                  label: hud.endless
+                                      ? 'Wave ${hud.startedWaves}'
+                                      : 'Wave '
+                                            '${hud.startedWaves}/'
+                                            '${hud.totalWaves}',
+                                ),
+                                if (hud.objectiveCount > 0) ...[
+                                  const SizedBox(width: 8),
+                                  _HudChip(
+                                    icon: Icons.flag_rounded,
+                                    semanticsLabel:
+                                        'Goals ${hud.objectivesMet} of '
+                                        '${hud.objectiveCount}',
+                                    label:
+                                        'Goals ${hud.objectivesMet}/'
+                                        '${hud.objectiveCount}',
+                                    tint:
+                                        hud.objectives.any(
+                                          (status) => status.hasFailed,
+                                        )
+                                        ? Theme.of(
+                                            context,
+                                          ).colorScheme.error
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          onPressed: hud.isOver ? null : game.togglePause,
+                          tooltip: hud.isPaused ? 'Resume' : 'Pause',
+                          icon: Icon(
+                            hud.isPaused
+                                ? Icons.play_arrow_rounded
+                                : Icons.pause_rounded,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        _SpeedButton(
+                          speed: hud.speed,
+                          onPressed: hud.isOver ? null : controller.toggleSpeed,
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -567,6 +734,9 @@ class _GameplayView extends StatelessWidget {
                     endlessBest: endlessBest,
                     onReplay: game.restartLevel,
                     onLeave: onLeave,
+                    difficulty: difficulty,
+                    daily: daily,
+                    dailyBest: dailyBest,
                   );
                 }
                 if (hud.isPaused) {
@@ -783,7 +953,9 @@ class _TutorialCard extends StatefulWidget {
 }
 
 class _TutorialCardState extends State<_TutorialCard> {
-  /// One line per idea: what the enemy goal is, how to build, how waves start.
+  /// One line per idea: the core, building, the three V2-2 mechanics, and how
+  /// waves start. The mechanics arrive before the wave step so a player reading
+  /// from the front meets chain/aura/splitter before their first fight (V2-5).
   static const List<({String title, String body})> _steps = [
     (
       title: 'Protect the core',
@@ -796,6 +968,25 @@ class _TutorialCardState extends State<_TutorialCard> {
       body:
           'Tap an open pad to build a tower. Gold is in the HUD; tapping a '
           'built tower shows its range, stats and upgrades.',
+    ),
+    (
+      title: 'Chain damage',
+      body:
+          'Arc towers send a bolt that jumps between nearby enemies. Every '
+          'jump hits a little softer, so a cluster is worth more than one '
+          'target.',
+    ),
+    (
+      title: 'Support auras',
+      body:
+          'Beacons deal no damage: they widen the range of the towers inside '
+          'their circle. Select one to see the ring it projects.',
+    ),
+    (
+      title: 'Splitters',
+      body:
+          'A splitter breaks into two runners where it dies. Blast or chain '
+          'damage clears both, so keep one near the back of the lane.',
     ),
     (
       title: 'Start the wave',
@@ -956,7 +1147,7 @@ class _PauseOverlay extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
           child: Card(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -976,6 +1167,14 @@ class _PauseOverlay extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  // The goals are visible while paused too: a player deciding
+                  // whether to keep a run must see which goals it can still
+                  // reach, not discover a lost one on the result screen.
+                  if (hud.objectives.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    for (final status in hud.objectives)
+                      _GoalLine(status: status),
+                  ],
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -1012,18 +1211,31 @@ class _PauseOverlay extends StatelessWidget {
 
 /// Small rounded label used by the HUD.
 class _HudChip extends StatelessWidget {
-  const _HudChip({required this.label, this.icon, this.tint});
+  const _HudChip({
+    required this.label,
+    this.icon,
+    this.tint,
+    this.semanticsLabel,
+  });
 
   final String label;
   final IconData? icon;
   final Color? tint;
 
+  /// What a screen reader announces instead of the visual shorthand.
+  ///
+  /// "150 g" reads as a currency glyph and a number; "Gold 150" names the fact.
+  /// When it is set the visible text is excluded, so the value is announced
+  /// once and not twice (V2-5).
+  final String? semanticsLabel;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final icon = this.icon;
+    final semanticsLabel = this.semanticsLabel;
 
-    return DecoratedBox(
+    final chip = DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(999),
@@ -1041,6 +1253,16 @@ class _HudChip extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    if (semanticsLabel == null) {
+      return chip;
+    }
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: semanticsLabel,
+      child: chip,
     );
   }
 }
@@ -1415,12 +1637,23 @@ class _TowerDetails extends StatelessWidget {
                 ),
               ),
               for (final policy in TargetingPolicy.values)
-                ChoiceChip(
-                  label: Text(
-                    policy == TargetingPolicy.first ? 'First' : 'Strongest',
-                  ),
+                // The chip's own word is "First" or "Strongest", under the
+                // panel's 'Target' label; the semantics label names the action
+                // so a screen reader says what tapping it does (V2-5).
+                // Not excluded: the chip's own tap action must survive.
+                Semantics(
+                  button: true,
                   selected: tower.targetingPolicy == policy,
-                  onSelected: (_) => onPriority(policy),
+                  label: policy == TargetingPolicy.first
+                      ? 'Target the first enemy'
+                      : 'Target the strongest enemy',
+                  child: ChoiceChip(
+                    label: Text(
+                      policy == TargetingPolicy.first ? 'First' : 'Strongest',
+                    ),
+                    selected: tower.targetingPolicy == policy,
+                    onSelected: (_) => onPriority(policy),
+                  ),
                 ),
               Semantics(
                 button: true,
@@ -1531,6 +1764,9 @@ class _ResultPanel extends StatelessWidget {
     this.campaignComplete = false,
     this.onNext,
     this.endlessBest = 0,
+    this.difficulty = Difficulty.normal,
+    this.daily = false,
+    this.dailyBest,
   });
 
   final LevelHudState hud;
@@ -1551,6 +1787,15 @@ class _ResultPanel extends StatelessWidget {
 
   /// The stored endless best in waves, shown by the endless result panel.
   final int endlessBest;
+
+  /// The mode this result was earned on (D65).
+  final Difficulty difficulty;
+
+  /// Whether this attempt was today's daily challenge (D70).
+  final bool daily;
+
+  /// The best run kept for this daily date, or null before the first clear.
+  final DailyResult? dailyBest;
 
   @override
   Widget build(BuildContext context) {
@@ -1573,10 +1818,11 @@ class _ResultPanel extends StatelessWidget {
         unlockMessage = 'Unlocked: ${nextLevel.name}';
       }
     }
-    final stars = LevelRating.starsFor(
+    final stars = LevelRating.starsForRun(
       victorious: hud.isVictorious,
       coreHealth: hud.coreHealth,
       maxCoreHealth: hud.maxCoreHealth,
+      objectives: hud.objectives,
     );
 
     return ColoredBox(
@@ -1585,14 +1831,19 @@ class _ResultPanel extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
           child: Card(
-            child: Padding(
+            // Scrollable rather than fixed: the goal rows made the card taller
+            // than a 450-high landscape surface, and a clipped result is worse
+            // than a scrollable one.
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    endless
+                    daily
+                        ? 'Daily challenge'
+                        : endless
                         ? 'Run over'
                         : defeated
                         ? 'Core destroyed'
@@ -1605,7 +1856,11 @@ class _ResultPanel extends StatelessWidget {
                   // and a second line of its own overflows the card on a
                   // 450-high landscape surface.
                   Text(
-                    endless
+                    daily
+                        ? (defeated
+                              ? 'The core fell on wave ${hud.startedWaves}.'
+                              : "Cleared today's level.")
+                        : endless
                         ? 'You cleared $cleared waves.'
                         : unlockMessage ??
                               (defeated
@@ -1625,6 +1880,14 @@ class _ResultPanel extends StatelessWidget {
                   if (!endless) ...[
                     const SizedBox(height: 12),
                     _RatingStars(stars: stars),
+                    // The goals themselves, each with its live state: the star
+                    // count above is these rows, so the card cannot award two
+                    // stars while showing two unmet goals (D68).
+                    if (hud.objectives.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      for (final status in hud.objectives)
+                        _GoalLine(status: status),
+                    ],
                     const SizedBox(height: 12),
                   ],
                   _ResultRow(
@@ -1646,6 +1909,13 @@ class _ResultPanel extends StatelessWidget {
                     label: 'Gold earned',
                     value: '${hud.goldEarned} g',
                   ),
+                  if (difficulty != Difficulty.normal)
+                    _ResultRow(label: 'Difficulty', value: difficulty.label),
+                  if (daily && dailyBest != null)
+                    _ResultRow(
+                      label: 'Best today',
+                      value: '${dailyBest!.stars} stars',
+                    ),
                   const SizedBox(height: 16),
                   if (onNext != null)
                     // One row for all three actions: on a 450-high landscape
@@ -1696,6 +1966,54 @@ class _ResultPanel extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// One goal line: its derived sentence and where it stands.
+///
+/// The sentence comes from `LevelObjective.description`, so the rule and the
+/// words a player reads cannot drift; the icon carries the state, and the colour
+/// only reinforces it (D46: never colour alone).
+class _GoalLine extends StatelessWidget {
+  const _GoalLine({required this.status});
+
+  final LevelObjectiveStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final (icon, color) = switch (status.state) {
+      LevelObjectiveState.met => (
+        Icons.check_circle_rounded,
+        const Color(0xFF8BF0D6),
+      ),
+      LevelObjectiveState.failed => (
+        Icons.cancel_rounded,
+        theme.colorScheme.error,
+      ),
+      LevelObjectiveState.pending => (
+        Icons.radio_button_unchecked_rounded,
+        theme.colorScheme.onSurfaceVariant,
+      ),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              status.objective.description,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: status.hasFailed ? theme.colorScheme.error : null,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

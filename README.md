@@ -10,7 +10,7 @@ No account, no server, no network access required to play.
 | Shell | Riverpod 3.4.3 · go_router 18.1.1 · shared_preferences 2.5.6 |
 | App ID / bundle ID | `com.uptowerdefense.game` (`…game.RunnerTests` for the iOS test bundle) |
 | Orientation | Landscape gameplay, responsive menus |
-| Phase status | **Phases 0–11 complete; Phase 12 complete; Phase 13 (release prep) in progress; V2-0 and V2-1 complete** — Phase 12 added the QA scenario doc, restart/navigation leak tests, paired stress frame-cost tests (simulation + effects) and a splash broad-phase optimization; its device pass is recorded in `docs/QA_SCENARIOS.md` §9. Phase 13 so far: release signing via `android/key.properties`, launcher icons, dark splash, store listing + release checklist docs, package-licence audit and a repository-level save-upgrade test; release APK and iOS simulator builds verified. Still needs developer accounts: signed store uploads and the archive/TestFlight path. Haptics are wired for builds, upgrades and core leaks; store-signing and archive gates remain outstanding. V2-0 updated the toolchain to Flutter 3.47.8/Dart 3.13.7, refreshed the host-side baselines and ran the Phase 12 scenarios against the release APK on an Android 15 emulator, deferring audio audibility and release-mode GPU/memory profiling to the V2-6 hardware pass. V2-1 added Region 3 (`hollow_court`, `hollow_01`–`hollow_05`) and the boss speed surge, with the balance probe at 15/15 levels under all four strategies |
+| Phase status | **Phases 0–11 complete; Phase 12 complete; Phase 13 (release prep) in progress; V2-0 through V2-5 complete** — Phase 12 added the QA scenario doc, restart/navigation leak tests, paired stress frame-cost tests (simulation + effects) and a splash broad-phase optimization; its device pass is recorded in `docs/QA_SCENARIOS.md` §9. Phase 13 so far: release signing via `android/key.properties`, launcher icons, dark splash, store listing + release checklist docs, package-licence audit and a repository-level save-upgrade test; release APK and iOS simulator builds verified. Still needs developer accounts: signed store uploads and the archive/TestFlight path. Haptics are wired for builds, upgrades and core leaks; store-signing and archive gates remain outstanding. V2-0 updated the toolchain to Flutter 3.47.8/Dart 3.13.7, refreshed the host-side baselines and ran the Phase 12 scenarios against the release APK on an Android 15 emulator, deferring audio audibility and release-mode GPU/memory profiling to the V2-6 hardware pass. V2-1 added Region 3 (`hollow_court`, `hollow_01`–`hollow_05`) and the boss speed surge, with the balance probe at 15/15 levels under all four strategies. V2-2 shipped the arc and beacon towers plus the bulwark and splitter enemies; V2-3 shipped per-level goal scoring (`1 + met` stars), Normal/Hard data profiles with both balance columns pinned, the seeded daily challenge and save v4. V2-4 added the ten achievements, the progress screen and save v5, which also persists per-date daily records. V2-5 shipped the accessibility pass: a 1.3× large-text gate across the HUD, panels and result card, screen-reader labels for HUD facts and panel actions, tutorial steps for chain/aura/splitters, and a silhouette check on every enemy sprite. V2-6 moved the build to `2.0.0+2`, re-ran the probe on both difficulties, extended the QA scenarios to the daily challenge, difficulty switching, achievements and a 1.0→2.0 upgrade, and rewrote the store copy for the shipped roster; its evidence is [`docs/V2_RELEASE_REPORT.md`](docs/V2_RELEASE_REPORT.md). The release APK and Play bundle are signed with the release certificate. The hardware pass, the 1.0→2.0 over-install, an iOS archive and the store upload are still open, so the 2.0 release is not signed off |
 
 Version pins above reflect the stable toolchain verified for V2-0 on
 2026-10-29. Flutter 3.47.8 / Dart 3.13.7 includes the required Flutter/Dart
@@ -31,7 +31,10 @@ security remediation; Flame 1.38.2 is the latest stable package. See
 - [`docs/ASSET_ATTRIBUTIONS.md`](docs/ASSET_ATTRIBUTIONS.md) — required record for
   every external asset and package licence.
 - [`docs/QA_SCENARIOS.md`](docs/QA_SCENARIOS.md) — repeatable manual QA scenarios
-  for the Phase 12 pass: offline, interruption, orientation, process kill.
+  for the Phase 12 pass (offline, interruption, orientation, process kill) and
+  the v2 surfaces (daily challenge, difficulties, achievements, save upgrade).
+- [`docs/V2_RELEASE_REPORT.md`](docs/V2_RELEASE_REPORT.md) — V2-6 evidence: both
+  balance outcome tables, the gate results and what is still open.
 - [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) — release gates,
   signing setup, upgrade verification and the rollback/patch procedure.
 - [`docs/STORE_LISTING.md`](docs/STORE_LISTING.md) — store copy, privacy and
@@ -83,8 +86,9 @@ exactly these commands.
 ```bash
 flutter build apk --debug         # Android debug APK
 flutter build ios --simulator     # iOS simulator app (no signing)
-flutter build apk --release       # release APK (debug-signed unless
-                                  # android/key.properties exists)
+flutter build apk --release       # release APK, signed with the key in
+                                  # android/key.properties
+flutter build appbundle --release # Play upload bundle, same key
 ```
 
 Release signing, launcher icons and the store procedure live in

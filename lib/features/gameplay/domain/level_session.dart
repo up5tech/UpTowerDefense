@@ -14,6 +14,7 @@ import 'package:up_tower_defense/features/gameplay/domain/models/tower_definitio
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_instance.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/tower_level_stats.dart';
 import 'package:up_tower_defense/features/gameplay/domain/models/world_point.dart';
+import 'package:up_tower_defense/features/gameplay/domain/objective_status.dart';
 import 'package:up_tower_defense/features/gameplay/domain/targeting_system.dart';
 import 'package:up_tower_defense/features/gameplay/domain/tower_build_result.dart';
 import 'package:up_tower_defense/features/gameplay/domain/tower_sell_result.dart';
@@ -118,6 +119,7 @@ class LevelSession {
   int _nextInstanceId = 0;
   int _nextTowerId = 0;
   int _nextProjectileId = 0;
+  int _peakTowerCount = 0;
 
   /// Simulation time elapsed since the session was created.
   double get elapsed => _elapsed;
@@ -149,6 +151,30 @@ class LevelSession {
 
   /// Number of towers on the field.
   int get towerCount => _towers.length;
+
+  /// The highest number of towers that stood at the same time (D68).
+  ///
+  /// A `maxTowers` goal measures this, not [towerCount]: the peak only ever
+  /// rises during an attempt, so selling a tower cannot restore a cap the build
+  /// already spent and build–sell–build cannot cheat the goal.
+  int get peakTowerCount => _peakTowerCount;
+
+  /// Where every goal this level declares stands right now.
+  ///
+  /// Derived from the run's own facts on every read, so the HUD, the result
+  /// panel and the star rule all read the same answer (D68). Empty for a level
+  /// with no goals, which is what lets those levels keep the 1.0 rating.
+  List<LevelObjectiveStatus> get objectiveStatuses => LevelObjectives.evaluate(
+    objectives: level.objectives,
+    leaks: leaks,
+    peakTowerCount: _peakTowerCount,
+    elapsedSeconds: _elapsed,
+    coreHealth: coreHealth,
+    victorious: _phase == LevelPhase.victory,
+  );
+
+  /// How many of [objectiveStatuses] the run satisfies.
+  int get objectivesMet => LevelObjectives.metCount(objectiveStatuses);
 
   /// Shots currently in flight, in fire order.
   List<ProjectileState> get projectiles => List.unmodifiable(_projectiles);
@@ -333,6 +359,9 @@ class LevelSession {
     _nextTowerId += 1;
     _towers.add(tower);
     _towersByPad[padId] = tower;
+    if (_towers.length > _peakTowerCount) {
+      _peakTowerCount = _towers.length;
+    }
     // An economy fact, not a combat one — but the renderer needs it the same
     // way, because the pad is where the change became visible. `_buildBlocker`
     // already proved the pad exists, hence no fallback position.
@@ -437,6 +466,7 @@ class LevelSession {
     _nextInstanceId = 0;
     _nextTowerId = 0;
     _nextProjectileId = 0;
+    _peakTowerCount = 0;
     coreHealth = level.coreHealth;
     gold = level.startingGold;
     leaks = 0;

@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/level_objective.dart';
 
 /// One level entry in the campaign order.
 ///
@@ -7,13 +8,23 @@ import 'package:meta/meta.dart';
 /// asserts the name matches the level file, so the two cannot drift.
 @immutable
 class CampaignLevel {
-  const CampaignLevel({required this.id, required this.displayName});
+  const CampaignLevel({
+    required this.id,
+    required this.displayName,
+    this.objectives = const [],
+  });
 
   /// Level id; the level file is `assets/data/levels/<id>.json`.
   final String id;
 
   /// Name shown in the level picker.
   final String displayName;
+
+  /// The level's goals, mirrored here so the picker can list them without
+  /// loading every level bundle (D68). `campaign_assets_test` asserts the list
+  /// is identical to the level file's, exactly as it does for [displayName],
+  /// so the copy can never silently disagree with the rules that score it.
+  final List<LevelObjective> objectives;
 
   @override
   String toString() => 'CampaignLevel($id)';

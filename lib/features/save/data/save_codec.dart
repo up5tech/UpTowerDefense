@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:up_tower_defense/features/campaign/domain/achievement.dart';
 import 'package:up_tower_defense/features/campaign/domain/campaign_progress.dart';
 import 'package:up_tower_defense/features/campaign/domain/level_rating.dart';
+import 'package:up_tower_defense/features/gameplay/domain/daily_challenge.dart';
+import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart';
 import 'package:up_tower_defense/features/save/data/save_document.dart';
 import 'package:up_tower_defense/features/settings/domain/game_settings.dart';
 
@@ -28,8 +31,12 @@ class SaveFormatException implements Exception {
 abstract final class SaveCodec {
   /// The version this build writes.
   ///
-  /// Version 3 added `endlessBest` beside progress and settings (D62).
-  static const int currentVersion = 3;
+  /// Version 3 added `endlessBest` beside progress and settings (D62); version 4
+  /// keys every result by level *and* difficulty and records how many goals the
+  /// run met (D65, D68); version 5 adds earned achievements and the per-date
+  /// daily records (D67, D66). Every change is additive, so every older save
+  /// still loads with defaults.
+  static const int currentVersion = 5;
 
   /// The oldest version this build still reads.
   ///
@@ -47,11 +54,18 @@ abstract final class SaveCodec {
     return jsonEncode(<String, Object?>{
       'schemaVersion': currentVersion,
       'results': <String, Object?>{
-        for (final entry in document.progress.results.entries)
-          entry.key: _encodeResult(entry.value),
+        for (final result in document.progress.results.values)
+          result.key: _encodeResult(result),
       },
       'settings': _encodeSettings(document.settings),
       'endlessBest': document.endlessBest,
+      'achievements': [
+        for (final achievement in document.achievements) achievement.wireName,
+      ]..sort(),
+      'dailyResults': <String, Object?>{
+        for (final entry in document.dailyResults.entries)
+          entry.key.toString(): _encodeDailyResult(entry.value),
+      },
     });
   }
 
@@ -79,7 +93,7 @@ abstract final class SaveCodec {
     final version = _readVersion(decoded);
     final progress = CampaignProgress(
       results: Map<String, LevelResult>.unmodifiable(
-        _readResults(decoded['results']),
+        _readResults(decoded['results'], version: version),
       ),
     );
     // Version 1 kept preferences in their own keys, so migrating forward folds
@@ -97,7 +111,162 @@ abstract final class SaveCodec {
       progress: progress,
       settings: settings,
       endlessBest: endlessBest,
+      // Achievements and dailies only exist from version 5 on: an older payload
+      // has no such facts, and inventing them would be a repair, not a read.
+      achievements: version < achievementsSince
+          ? const <Achievement>{}
+          : _readAchievements(decoded['achievements']),
+      dailyResults: version < dailyResultsSince
+          ? const <int, DailyResult>{}
+          : _readDailyResults(decoded['dailyResults']),
     );
+  }
+
+  /// Version from which earned achievements are part of the document.
+  static const int achievementsSince = 5;
+
+  /// Version from which daily records are part of the document.
+  static const int dailyResultsSince = 5;
+
+  /// Reads the earned ids, refusing one this build cannot name.
+  ///
+  /// A v5 payload with an id outside [Achievement] is corrupt rather than
+  /// newer — a newer build would have written a higher `schemaVersion` and been
+  /// refused already — so it is reported instead of dropped.
+  static Set<Achievement> _readAchievements(Object? value) {
+    if (value is! List<Object?>) {
+      throw const SaveFormatException(
+        'achievements is missing or is not a list',
+      );
+    }
+
+    final earned = <Achievement>{};
+    final problems = <String>[];
+    for (var index = 0; index < value.length; index++) {
+      final raw = value[index];
+      if (raw is! String) {
+        problems.add('achievements[$index] is not a string');
+        continue;
+      }
+      final achievement = Achievement.fromWireName(raw);
+      if (achievement == null) {
+        problems.add(
+          'achievements[$index] "$raw" is not a known achievement',
+        );
+        continue;
+      }
+      earned.add(achievement);
+    }
+
+    if (problems.isNotEmpty) {
+      throw SaveFormatException(problems.join('; '));
+    }
+    return Set<Achievement>.unmodifiable(earned);
+  }
+
+  /// Reads the per-date daily records.
+  ///
+  /// The stored date and the map key must agree: a result filed under the wrong
+  /// day would silently replace another day's best, which is the one thing a
+  /// daily record exists to keep apart (D66).
+  static Map<int, DailyResult> _readDailyResults(Object? value) {
+    if (value is! Map<String, Object?>) {
+      throw const SaveFormatException(
+        'dailyResults is missing or is not a JSON object',
+      );
+    }
+
+    final results = <int, DailyResult>{};
+    final problems = <String>[];
+    for (final entry in value.entries) {
+      final dateKey = int.tryParse(entry.key);
+      if (dateKey == null || dateKey <= 0) {
+        problems.add('dailyResults key "${entry.key}" is not a date');
+        continue;
+      }
+      final raw = entry.value;
+      if (raw is! Map<String, Object?>) {
+        problems.add('${entry.key} is not an object');
+        continue;
+      }
+      final json = raw;
+
+      final storedDate = _readInt(
+        json,
+        'dateKey',
+        label: '${entry.key} dateKey',
+        problems: problems,
+        min: 1,
+      );
+      if (storedDate != null && storedDate != dateKey) {
+        problems.add('${entry.key} stores dateKey $storedDate');
+        continue;
+      }
+      final levelId = json['levelId'];
+      if (levelId is! String || levelId.isEmpty) {
+        problems.add('${entry.key} levelId is missing or is empty');
+      }
+      final stars = _readInt(
+        json,
+        'stars',
+        label: '${entry.key} stars',
+        problems: problems,
+        min: 0,
+        max: LevelRating.maxStars,
+      );
+      final coreHealth = _readInt(
+        json,
+        'coreHealth',
+        label: '${entry.key} coreHealth',
+        problems: problems,
+        min: 0,
+      );
+      final maxCoreHealth = _readInt(
+        json,
+        'maxCoreHealth',
+        label: '${entry.key} maxCoreHealth',
+        problems: problems,
+        min: 1,
+      );
+      final objectivesMet = _readInt(
+        json,
+        'objectivesMet',
+        label: '${entry.key} objectivesMet',
+        problems: problems,
+        min: 0,
+        max: LevelRating.maxStars - 1,
+      );
+      if (coreHealth != null &&
+          maxCoreHealth != null &&
+          coreHealth > maxCoreHealth) {
+        problems.add('${entry.key} coreHealth exceeds maxCoreHealth');
+      }
+
+      if (storedDate == null ||
+          levelId is! String ||
+          levelId.isEmpty ||
+          stars == null ||
+          coreHealth == null ||
+          maxCoreHealth == null ||
+          coreHealth > maxCoreHealth ||
+          objectivesMet == null) {
+        continue;
+      }
+
+      results[dateKey] = DailyResult(
+        dateKey: dateKey,
+        levelId: levelId,
+        stars: stars,
+        coreHealth: coreHealth,
+        maxCoreHealth: maxCoreHealth,
+        objectivesMet: objectivesMet,
+      );
+    }
+
+    if (problems.isNotEmpty) {
+      throw SaveFormatException(problems.join('; '));
+    }
+    return Map<int, DailyResult>.unmodifiable(results);
   }
 
   /// Version from which `endlessBest` is part of the document.
@@ -130,7 +299,13 @@ abstract final class SaveCodec {
     return raw;
   }
 
-  static Map<String, LevelResult> _readResults(Object? value) {
+  /// Version from which a result carries its difficulty and goal count (D65).
+  static const int difficultyInResultsSince = 4;
+
+  static Map<String, LevelResult> _readResults(
+    Object? value, {
+    required int version,
+  }) {
     // Absent results would silently become an empty campaign and overwrite the
     // real one on the next write, so a missing section is a refusal, not an
     // empty level list.
@@ -154,6 +329,35 @@ abstract final class SaveCodec {
         continue;
       }
       final json = rawResult;
+
+      // Before v4 a level had exactly one result and keys were bare level ids;
+      // reading them as Normal keeps every stored key and star verbatim. A v4
+      // key must agree with the fields inside it, or the payload is refused
+      // rather than reinterpreted into the wrong mode's slot.
+      final levelIdField = version < difficultyInResultsSince
+          ? levelId
+          : _readResultLevelId(
+              json,
+              label: '$levelId levelId',
+              problems: problems,
+            );
+      final difficulty = version < difficultyInResultsSince
+          ? Difficulty.normal
+          : _readDifficulty(
+              json,
+              label: '$levelId difficulty',
+              problems: problems,
+            );
+      final objectivesMet = version < difficultyInResultsSince
+          ? 0
+          : _readInt(
+              json,
+              'objectivesMet',
+              label: '$levelId objectivesMet',
+              problems: problems,
+              min: 0,
+              max: LevelRating.maxStars - 1,
+            );
 
       final stars = _readInt(
         json,
@@ -208,7 +412,21 @@ abstract final class SaveCodec {
         usable = false;
       }
 
+      if (levelIdField != null && difficulty != null) {
+        final expected = LevelResult.keyOf(levelIdField, difficulty);
+        if (expected != levelId) {
+          problems.add(
+            '$levelId is stored under the wrong key for '
+            '"$levelIdField" on ${difficulty.wireName} (expected "$expected")',
+          );
+          usable = false;
+        }
+      }
+
       if (!usable ||
+          levelIdField == null ||
+          difficulty == null ||
+          objectivesMet == null ||
           stars == null ||
           coreHealth == null ||
           maxCoreHealth == null ||
@@ -217,14 +435,19 @@ abstract final class SaveCodec {
         continue;
       }
 
-      results[levelId] = LevelResult(
-        levelId: levelId,
+      // The stored key is the canonical one, so the map and the result can
+      // never disagree about which slot a run belongs to.
+      final result = LevelResult(
+        levelId: levelIdField,
         stars: stars,
         coreHealth: coreHealth,
         maxCoreHealth: maxCoreHealth,
         wavesCleared: wavesCleared,
         totalWaves: totalWaves,
+        difficulty: difficulty,
+        objectivesMet: objectivesMet,
       );
+      results[result.key] = result;
     }
 
     if (problems.isNotEmpty) {
@@ -302,13 +525,61 @@ abstract final class SaveCodec {
     return raw;
   }
 
+  static String? _readResultLevelId(
+    Map<String, Object?> json, {
+    required String label,
+    required List<String> problems,
+  }) {
+    final raw = json['levelId'];
+    if (raw is! String || raw.isEmpty) {
+      problems.add('$label is missing or is not a level id');
+      return null;
+    }
+    return raw;
+  }
+
+  /// Reads a result's difficulty, which must name a shipped mode.
+  static Difficulty? _readDifficulty(
+    Map<String, Object?> json, {
+    required String label,
+    required List<String> problems,
+  }) {
+    final raw = json['difficulty'];
+    if (raw is! String) {
+      problems.add('$label is missing or is not a string');
+      return null;
+    }
+    final difficulty = Difficulty.fromWireName(raw);
+    if (difficulty == null) {
+      problems.add(
+        '$label "$raw" is not a known difficulty; expected one of '
+        '${Difficulty.values.map((value) => value.wireName).join(', ')}',
+      );
+    }
+    return difficulty;
+  }
+
   static Map<String, Object> _encodeResult(LevelResult result) {
     return <String, Object>{
+      'levelId': result.levelId,
+      'difficulty': result.difficulty.wireName,
+      'objectivesMet': result.objectivesMet,
       'stars': result.stars,
       'coreHealth': result.coreHealth,
       'maxCoreHealth': result.maxCoreHealth,
       'wavesCleared': result.wavesCleared,
       'totalWaves': result.totalWaves,
+    };
+  }
+
+  static Map<String, Object> _encodeDailyResult(DailyResult result) {
+    return <String, Object>{
+      'dateKey': result.dateKey,
+      'levelId': result.levelId,
+      'stars': result.stars,
+      'coreHealth': result.coreHealth,
+      'maxCoreHealth': result.maxCoreHealth,
+      'objectivesMet': result.objectivesMet,
     };
   }
 

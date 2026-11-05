@@ -1,0 +1,6 @@
+{
+  "profiles": [
+    { "difficulty": "normal", "waveCountPercent": 100, "startingGoldPercent": 100 },
+    { "difficulty": "hard", "waveCountPercent": 125, "startingGoldPercent": 90 }
+  ]
+}

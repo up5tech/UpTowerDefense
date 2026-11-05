@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:up_tower_defense/features/campaign/domain/achievement.dart';
 import 'package:up_tower_defense/features/campaign/domain/campaign_progress.dart';
+import 'package:up_tower_defense/features/gameplay/domain/daily_challenge.dart';
 import 'package:up_tower_defense/features/save/data/save_codec.dart';
 import 'package:up_tower_defense/features/save/data/save_document.dart';
 import 'package:up_tower_defense/features/save/data/save_store.dart';
@@ -135,6 +137,22 @@ class SaveRepository {
   /// the max-enforcement lives with the notifier that owns the score.
   Future<void> saveEndlessBest(int waves) {
     _document = _document.copyWith(endlessBest: waves);
+    return _write(_document);
+  }
+
+  /// Stores the earned achievement ids, keeping every other part.
+  ///
+  /// The caller passes the whole earned set, not a delta: a set union is
+  /// idempotent, so a second call for the same facts cannot double-award or
+  /// duplicate an id in the payload (D67).
+  Future<void> saveAchievements(Set<Achievement> achievements) {
+    _document = _document.copyWith(achievements: achievements);
+    return _write(_document);
+  }
+
+  /// Stores the per-date daily records, keeping every other part.
+  Future<void> saveDailyResults(Map<int, DailyResult> results) {
+    _document = _document.copyWith(dailyResults: results);
     return _write(_document);
   }
 

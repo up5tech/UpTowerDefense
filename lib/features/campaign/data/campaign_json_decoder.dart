@@ -3,6 +3,7 @@ import 'package:up_tower_defense/features/campaign/domain/campaign_definition.da
 // path-aware reader: a malformed campaign reports the same way a malformed
 // level does, and there is only one JSON-reading implementation to fix.
 import 'package:up_tower_defense/features/gameplay/data/json_reader.dart';
+import 'package:up_tower_defense/features/gameplay/data/level_json_decoder.dart';
 
 /// Decodes the authored campaign file into ordered regions and levels.
 abstract final class CampaignJsonDecoder {
@@ -45,6 +46,9 @@ abstract final class CampaignJsonDecoder {
         'displayName',
         parent: path,
       ),
+      // The same decoder the level file uses, so the picker's copy of the goals
+      // is parsed by exactly the rules that validate them.
+      objectives: LevelJsonDecoder.decodeObjectives(json['objectives']),
     );
   }
 }

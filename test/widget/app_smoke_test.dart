@@ -43,7 +43,7 @@ void main() {
     // A fresh campaign still shows its totals, so the line reads as a stat
     // rather than as a reward the player has to earn first.
     expect(
-      find.text('0 of 4 levels cleared · 0 of 12 stars'),
+      find.text('0 of 4 levels cleared on Normal · 0 of 12 stars'),
       findsOneWidget,
     );
 
@@ -62,7 +62,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('1 of 4 levels cleared · 3 of 12 stars'),
+      find.text('1 of 4 levels cleared on Normal · 3 of 12 stars'),
       findsOneWidget,
     );
   });

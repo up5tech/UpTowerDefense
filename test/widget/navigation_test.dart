@@ -14,6 +14,8 @@ void main() {
     await pumpApp(tester);
 
     for (final label in ['Campaign', 'Codex', 'Settings', 'Credits']) {
+      await tester.ensureVisible(find.text(label));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(label));
       await tester.pumpAndSettle();
 

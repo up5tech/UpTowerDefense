@@ -17,14 +17,25 @@ Offline tower defense. No wifi, no accounts, no ads — just build and defend.
 UpTowerDefense is a complete tower defense game that works entirely offline.
 
 Build towers on map pads, upgrade them between waves, and hold the line
-against runners, brutes, tanks and bosses across a ten-level campaign.
-Every tower has a real role — rangers pick off the fastest targets,
-cannons splash whole crowds, frost slows a push you can't out-damage —
-and every number you see in the codex is the number the simulation uses.
+across fifteen hand-built levels in three regions — Meadow Reach, Ember
+Pass and Hollow Court — against grunts, runners, brutes, bulwarks,
+splitters and bosses that surge forward once they are nearly dead.
 
-• Ten hand-built campaign levels with a difficulty curve that teaches one
-  idea at a time
-• Three tower families with four upgrade levels and switchable targeting
+Every tower has a real role, and every number in the codex is the number
+the simulation uses: rangers pick off the fastest targets, cannons splash
+whole crowds, frost chills a push you can't out-damage, arc towers chain
+damage across a line, and a beacon buffs every tower inside its aura.
+
+• Fifteen campaign levels across three regions, each with two goals and up
+  to three stars
+• Five tower families with four upgrade levels and switchable targeting
+• Six enemy types, including a boss that speeds up when it is nearly dead
+• Normal and Hard: Hard opens per region once you clear that region on
+  Normal, and each mode keeps its own stars
+• A daily challenge picked from the date — the same level for everyone
+  that day, and no server involved
+• Ten achievements plus a progress screen with campaign totals, endless
+  best and today's challenge
 • A bestiary that shows the real stats of every enemy you face
 • Pause, restart and 2x speed any time; a level remembers nothing between
   tries and everything after you win
@@ -62,8 +73,13 @@ a save is ever damaged.
 | Unrestricted web access / network | None; the release manifest declares no permissions at all. |
 | Medical / location / personal data | None collected or used. |
 
-Expected classification: everyone / PEGI 3–7 equivalent (cartoon fantasy
-combat). Confirm per-store questionnaire wording at submission time.
+**v2 re-check (2.0.0).** The new content does not change any answer above: more
+stylised enemy silhouettes (bulwark, splitter and its two small children), one
+boss that moves faster below half health, an arc lightning chain and a beacon
+aura ring. No blood, gore, weapons pointed at people, gambling, purchases, chat
+or external links are added, so the classification stays everyone / PEGI 3–7
+equivalent (cartoon fantasy combat). Re-state the answers on the store's form
+rather than assuming the previous submission carries over.
 
 ## 5. Monetization statement
 
@@ -77,11 +93,15 @@ Take on the reference device profile (§QA_SCENARIOS pass hardware) from the
 **release** build, after the QA pass so the build is known-good:
 
 1. Main menu (shows the campaign summary, fully offline).
-2. Level select with locked/unlocked progression.
-3. Gameplay mid-wave with towers firing and effects visible.
-4. The pause overlay over a busy field.
-5. The codex — tower page (real stats).
-6. The result panel naming what it unlocked.
+2. Level select on Normal with the difficulty switch and the goals on each row.
+3. Gameplay mid-wave on Hollow Court with towers firing, effects visible and
+   the `Goals n/2` chip in the HUD.
+4. The pause overlay over a busy field, listing the level's two goals.
+5. The result panel: stars, goals met, and what the win unlocked.
+6. The codex — tower page (real stats), including arc and beacon.
+7. The progress screen: campaign totals, endless best, daily best and the ten
+   achievements.
+8. The daily challenge running, with the HUD naming the mode.
 
 Sizes: Android phone 1080×1920 (portrait screenshots are accepted even for
 landscape games; also capture 1920×1080 for the feature graphic and tablet
@@ -98,3 +118,43 @@ status bar honest (airplane mode icon is a feature here, not a mistake).
 | Category | Action / Strategy (games) |
 | Contact | project maintainer contact at submission time |
 | Data safety form | "No data collected" per §3 |
+| Version | `2.0.0` (build `2.0.0+2`); a store upload requires a strictly higher `versionCode` than anything already uploaded |
+
+## 8. Release notes — 2.0.0
+
+Short form for the store's "what's new" field:
+
+```
+Version 2 adds a third region, two towers, two enemies, per-level goals,
+Normal and Hard campaigns, a daily challenge and ten achievements. Still
+fully offline: no account, no ads, no permissions.
+
+Your progress, stars, settings and endless best are kept when you update.
+```
+
+Long form (store page or community post):
+
+```
+Version 2 doubles the reasons to come back without changing the promise:
+the game still runs entirely offline, with no account and no permissions.
+
+• Region 3 — Hollow Court: five new levels on a new switchback map, with
+  the boss's new speed surge as its signature pressure.
+• Two new towers: the Arc chains damage between nearby enemies, and the
+  Beacon buffs the range of every tower in its aura.
+• Two new enemies: the Bulwark shrugs off weak hits, and the Splitter
+  breaks into two smaller enemies when it dies.
+• Goals and stars: every campaign level now carries two objectives, and a
+  run scores one star for finishing plus one per goal met (a defeat is 0).
+• Normal and Hard: Hard fields more waves for less starting gold and opens
+  per region once that region is cleared on Normal.
+• A daily challenge picked by the date, offline, with its own record that
+  never touches campaign progress.
+• Ten achievements and a Progress screen over campaign totals, endless
+  best and today's challenge.
+• Accessibility: the HUD and panels fit larger system text, HUD facts and
+  panel actions read out, and every enemy has a distinct silhouette.
+
+Progress, stars, settings and your endless best are kept when you update.
+A 1.0 save opens in 2.0 unchanged; nothing is reset.
+```

@@ -26,6 +26,7 @@ import 'save_overrides.dart';
 Future<UpTowerDefenseGame> pumpGameplay(
   WidgetTester tester, {
   LevelBundle? bundle,
+  double textScale = 1,
 }) async {
   final content = bundle ?? testBundle;
   final selection = MapSelection();
@@ -69,6 +70,14 @@ Future<UpTowerDefenseGame> pumpGameplay(
       child: MaterialApp.router(
         routerConfig: router,
         debugShowCheckedModeBanner: false,
+        // The large-text audit (V2-5) needs the real shell wrapping the text
+        // scale, so this mirrors what a player's system setting does.
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
       ),
     ),
   );

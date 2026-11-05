@@ -7,7 +7,7 @@
   "waveTransitionSeconds": 5,
   "objectives": [
     { "kind": "maxTowers", "value": 3 },
-    { "kind": "deadlineSeconds", "value": 64 }
+    { "kind": "deadlineSeconds", "value": 160 }
   ],
   "waves": [
     {
