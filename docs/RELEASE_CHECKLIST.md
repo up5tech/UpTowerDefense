@@ -45,7 +45,7 @@ evidence.
 
 **Current v2 gate status (2026-11-05): CONTENT AND QA DONE, DISTRIBUTION
 OPEN.** `pubspec.yaml` is at `2.0.0+2`. `flutter analyze`, `dart format`, the
-full 565-test suite and the content validator are clean; the balance probe runs
+full 586-test suite and the content validator are clean; the balance probe runs
 all 15 levels on Normal and on Hard with both columns pinned; and
 `flutter build apk --release` (56.2 MB) plus `flutter build ios --simulator`
 both succeed. The APK and the AAB are **release-signed** (`CN=UpTowerDefense`, verified with

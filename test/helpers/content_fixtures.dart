@@ -239,7 +239,7 @@ const TowerDefinition testBeacon = TowerDefinition(
   ],
 );
 
-/// Shielded fixture for the flat per-hit reduction (D73): six off every hit,
+/// Shielded fixture for the flat per-hit reduction (D80): six off every hit,
 /// comfortably below its own health so the level stays winnable.
 const EnemyDefinition testShielded = EnemyDefinition(
   id: 'shielded',

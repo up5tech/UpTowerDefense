@@ -768,7 +768,7 @@ class LevelSession {
     // A flat shield is subtracted after the amplifier and floored at zero: a
     // hit it fully absorbs removes nothing — it never heals the enemy — while
     // the chill's percentage still pays for getting through, so one rule can
-    // favour neither the shield nor the amplifier by construction (D73).
+    // favour neither the shield nor the amplifier by construction (D80).
     final total = math.max(
       0,
       damage * (1 + amp) - enemy.definition.flatDamageReduction,
