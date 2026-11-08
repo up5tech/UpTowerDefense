@@ -270,4 +270,41 @@ void main() {
       }
     }
   });
+
+  test('every catalog enemy is spawned by some shipped content', () async {
+    // The roster shipped with bulwark and splitter defined but never referenced
+    // by a level or the endless template, so the codex, the store copy and the
+    // silhouette test all described enemies no player could meet. Coverage is
+    // a content rule, so it lives in the gate: a definition that nothing
+    // spawns is dead data that lies about the game.
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final levelAssets = await _assetsUnder(manifest, 'assets/data/levels/');
+    final repository = LevelRepository(
+      mapRepository: MapRepository(),
+      enemyRepository: EnemyRepository(),
+      towerRepository: TowerRepository(),
+    );
+    final catalog = await EnemyRepository().load(ContentCatalog.enemies);
+
+    final spawned = <String>{};
+    for (final asset in [...levelAssets, ContentCatalog.endless]) {
+      final bundle = await repository.load(asset);
+      for (final wave in bundle.level.waves) {
+        for (final group in wave.groups) {
+          spawned.add(group.enemyId);
+        }
+      }
+    }
+
+    for (final enemy in catalog.all) {
+      expect(
+        spawned,
+        contains(enemy.id),
+        reason:
+            '"${enemy.id}" is in the enemy catalog but no shipped level or '
+            'the endless template spawns it — either add it to content or '
+            'remove the definition',
+      );
+    }
+  });
 }

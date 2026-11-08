@@ -195,7 +195,10 @@ List<(String, String)> _plan(
 /// of the new map leaked nothing at all, which is why `hollow_03` now runs
 /// sixteen runners at half-second spacing and `hollow_05` fields two surging
 /// bosses. The D69 surge itself did not move a single ember row, which is the
-/// evidence that the mechanic costs the shipped campaign nothing.
+/// evidence that the mechanic costs the shipped campaign nothing. The V2-2
+/// roster fix (D79) then put bulwark and splitter spawns into `hollow_03`–
+/// `hollow_05`, which is why those three rows sit closer to the edge than the
+/// rest of the table.
 const Map<String, Map<String, (bool, int, int)>> _pinnedOutcomes = {
   'meadow_04': {
     'rangers only': (true, 18, 0),
@@ -252,21 +255,21 @@ const Map<String, Map<String, (bool, int, int)>> _pinnedOutcomes = {
     'no-frost control': (true, 16, 2),
   },
   'hollow_03': {
-    'rangers only': (true, 9, 9),
+    'rangers only': (true, 3, 12),
     'cannon crossfire': (true, 20, 0),
-    'frost control': (true, 9, 9),
-    'no-frost control': (true, 20, 0),
+    'frost control': (true, 7, 10),
+    'no-frost control': (true, 18, 1),
   },
   'hollow_04': {
-    'rangers only': (true, 20, 0),
+    'rangers only': (true, 15, 5),
     'cannon crossfire': (true, 20, 0),
-    'frost control': (true, 20, 0),
-    'no-frost control': (true, 10, 10),
+    'frost control': (true, 17, 3),
+    'no-frost control': (true, 1, 17),
   },
   'hollow_05': {
-    'rangers only': (true, 4, 5),
+    'rangers only': (true, 2, 6),
     'cannon crossfire': (true, 14, 0),
-    'frost control': (true, 4, 5),
+    'frost control': (true, 2, 6),
     'no-frost control': (true, 4, 5),
   },
 };

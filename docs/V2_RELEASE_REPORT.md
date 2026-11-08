@@ -30,6 +30,17 @@ so V2-3's pins still describe the shipped data. That is the expected result of a
 release phase that changes no balance data; a mismatch here would have meant a
 data edit landed without its pin.
 
+**Amended 2026-11-08 — the V2-2 roster actually spawns now.** Bulwark and
+Splitter were defined in `enemies.json` but referenced by no level and not by
+the endless template, so the "6 enemies" the codex and store copy describe
+could never appear in play. They now spawn in `hollow_03`–`hollow_05` (the
+Region 3 finale levels, matching how D69's surge debuts there) and in the
+endless template's later waves; `content_assets_test` gained a coverage rule
+that fails when a catalog enemy is spawned nowhere. The §2 table above is the
+re-run Normal probe after that change — every level still wins under every
+plan, with `hollow_03`–`hollow_05` closer to the edge — and the §3 Hard table
+is unchanged value for value, including its nine pinned losses.
+
 ## 2. Outcome table — Normal
 
 `DifficultyProfile(normal, waves 100%, gold 100%)`, naive fill-then-upgrade
@@ -88,17 +99,17 @@ policy, waves started as soon as allowed. Stars are `1 + goals met`, defeat 0.
 | hollow_02 | cannon crossfire | win | 20 | 0 | 1/2 | 2 |
 | hollow_02 | frost control | win | 18 | 1 | 1/2 | 2 |
 | hollow_02 | no-frost control | win | 16 | 2 | 1/2 | 2 |
-| hollow_03 | rangers only | win | 9 | 9 | 1/2 | 2 |
+| hollow_03 | rangers only | win | 3 | 12 | 1/2 | 2 |
 | hollow_03 | cannon crossfire | win | 20 | 0 | 2/2 | **3** |
-| hollow_03 | frost control | win | 9 | 9 | 1/2 | 2 |
-| hollow_03 | no-frost control | win | 20 | 0 | 2/2 | **3** |
-| hollow_04 | rangers only | win | 20 | 0 | 2/2 | **3** |
+| hollow_03 | frost control | win | 7 | 10 | 1/2 | 2 |
+| hollow_03 | no-frost control | win | 18 | 1 | 2/2 | **3** |
+| hollow_04 | rangers only | win | 15 | 5 | 2/2 | **3** |
 | hollow_04 | cannon crossfire | win | 20 | 0 | 2/2 | **3** |
-| hollow_04 | frost control | win | 20 | 0 | 2/2 | **3** |
-| hollow_04 | no-frost control | win | 10 | 10 | 1/2 | 2 |
-| hollow_05 | rangers only | win | 4 | 5 | 1/2 | 2 |
+| hollow_04 | frost control | win | 17 | 3 | 2/2 | **3** |
+| hollow_04 | no-frost control | win | 1 | 17 | 1/2 | 2 |
+| hollow_05 | rangers only | win | 2 | 6 | 1/2 | 2 |
 | hollow_05 | cannon crossfire | win | 14 | 0 | 2/2 | **3** |
-| hollow_05 | frost control | win | 4 | 5 | 1/2 | 2 |
+| hollow_05 | frost control | win | 2 | 6 | 1/2 | 2 |
 | hollow_05 | no-frost control | win | 4 | 5 | 1/2 | 2 |
 
 Read across each level: Cannons beat the pure-ranger control on the four

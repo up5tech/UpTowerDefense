@@ -50,6 +50,12 @@
           "count": 8,
           "spawnIntervalSeconds": 1.1,
           "initialDelaySeconds": 4.0
+        },
+        {
+          "enemyId": "bulwark",
+          "count": 2,
+          "spawnIntervalSeconds": 3.0,
+          "initialDelaySeconds": 8.0
         }
       ]
     },
@@ -67,6 +73,12 @@
           "count": 6,
           "spawnIntervalSeconds": 1.2,
           "initialDelaySeconds": 3.5
+        },
+        {
+          "enemyId": "splitter",
+          "count": 3,
+          "spawnIntervalSeconds": 1.8,
+          "initialDelaySeconds": 6.0
         }
       ]
     }

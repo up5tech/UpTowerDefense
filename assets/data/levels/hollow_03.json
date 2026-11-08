@@ -72,9 +72,15 @@
         },
         {
           "enemyId": "brute",
-          "count": 7,
+          "count": 5,
           "spawnIntervalSeconds": 1.4,
           "initialDelaySeconds": 5.0
+        },
+        {
+          "enemyId": "bulwark",
+          "count": 3,
+          "spawnIntervalSeconds": 2.0,
+          "initialDelaySeconds": 8.0
         }
       ]
     },
@@ -89,9 +95,15 @@
         },
         {
           "enemyId": "runner",
-          "count": 14,
+          "count": 10,
           "spawnIntervalSeconds": 0.6,
           "initialDelaySeconds": 6.0
+        },
+        {
+          "enemyId": "splitter",
+          "count": 4,
+          "spawnIntervalSeconds": 1.4,
+          "initialDelaySeconds": 9.0
         }
       ]
     }
