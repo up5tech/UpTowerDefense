@@ -214,7 +214,7 @@ data-loss defect remains** — a known issue may ship only if it is neither.
 | Severity | Scenario | Description | Build | Status |
 |----------|----------|-------------|-------|--------|
 | High | — | **Store distribution.** The `2.0.0+2` APK and AAB are now **release-signed** (`CN=UpTowerDefense`, verified by `apksigner`), but nothing has been uploaded, and no iOS archive/TestFlight export exists (Apple account required). The 2.0 build is distributable on Android, not yet distributed. | `2.0.0+2`, 2026-11-05 | Open — V2-6 gate. Not a gameplay defect |
-| Medium | U1–U5 | **Upgrade over 1.0 not executed on a device.** No 1.0 artifact exists on this host and no physical device is attached, so the over-install was not performed. Automated half: `save_codec_test` (v1 → v5 pairs), `save_repository_test` (recovery group), `save_v4_test`, `save_v5_test`. | `2.0.0+2`, 2026-11-05 | Open — V2-6 gate |
+| Medium | U1–U5 | **Upgrade over 1.0 not executed on a device.** No archived 1.0 artifact exists yet — the 1.0 baseline APK (built from `d3ec282`) and a sample `save.current` payload still need to be produced and stored — and no physical device is attached, so the over-install was not performed. Automated half: `save_codec_test` (v1 → v5 pairs), `save_repository_test` (recovery group), `save_v4_test`, `save_v5_test`. | `2.0.0+2`, 2026-11-05 | Open — V2-6 gate |
 | Low | S1–S3 | Release-mode GPU frame pacing and thermal/memory behaviour are still unmeasured: the only AVD rasterises in software (`swiftshader_indirect`). The host-side simulation and effects baselines in the table above are not a substitute. | `2.0.0+2`, 2026-11-05 | Open — hardware pass |
 | Low | A1–A4 | Music and SFX audibility is unverified: this host neither monitors the emulator's audio output nor has a Bluetooth route, so only player lifecycle (`dumpsys audio`) was measurable. | `e870fe2` release, 2026-11-02 | Open — verify on hardware in the V2-6 pass |
 | Low | O1 | On Android 12+ the system splash paints white instead of the palette `#0D1117`: `values/styles.xml` sets a `windowBackground` *drawable*, which the platform's splash screen cannot use, and no `values-v31` theme sets `windowSplashScreenBackground`. One white flash before the first Flutter frame. | `e870fe2` release, 2026-11-02 | Open — cosmetic |
@@ -280,6 +280,12 @@ Preconditions: the 1.0 release build installed on the device with real progress
 (several levels won with stars, settings changed, an endless best recorded),
 then the 2.0 build installed **over it** without uninstalling.
 
+Before the first run, archive the inputs so the scenario stays repeatable: the
+1.0 APK built from `d3ec282` (the last commit before V2-0) release-signed with
+the same key, and a `save.current` payload (schema v3) captured from a played
+1.0 session — the save lives in `FlutterSharedPreferences` under
+`save.current`, so the JSON string alone is enough to seed a device.
+
 | # | Steps | Expected |
 |---|---|---|
 | U1 | Launch 2.0 after the over-install and open **Campaign**. | Every 1.0 win, unlock and best star is present; every level that was playable in 1.0 is still open, and the campaign now shows the 15 levels of 2.0. |
@@ -298,8 +304,8 @@ then the 2.0 build installed **over it** without uninstalling.
 | Networking | Release manifest still declares no permissions (`offline_guard_test` green); every scenario above assumes airplane mode |
 
 **Not produced on this host.** Sections 12–15 have not been executed on a
-device: there is no physical device or 1.0 artifact here, and no Apple team for
-an archive export. Android signing is done — the APK and AAB verify against the
+device: there is no physical device or archived 1.0 build/save here, and no
+Apple team for an archive export. Android signing is done — the APK and AAB verify against the
 release certificate — but the automated halves named in §10's known-issues rows
 stand in for the rules, not for the over-install. V2-6 is therefore **not signed
 off**; see [`V2_RELEASE_REPORT.md`](V2_RELEASE_REPORT.md) §6 for the remaining gate

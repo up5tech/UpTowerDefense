@@ -229,8 +229,9 @@ outside the repo** — losing them means this listing can never be updated again
 
 | Gate | Why it is open | What closes it |
 |---|---|---|
+| Release tag | The repo has no git tags, and V2_PLAN §10.7 requires a tagged commit as the build source for the store-ready APK and iOS archive | Tag the frozen release commit (e.g. `v2.0.0`) once content and binaries are final, and push the tag |
 | Hardware pass | No physical device in this workspace: audio audibility (A1–A4), release-mode GPU frame pacing and thermal/memory behaviour (S1–S3, M4) cannot be observed on a software-rasterising AVD | Run those scenarios on a supported Android phone and an iPhone in release mode, record the table in `QA_SCENARIOS.md` §9 |
-| 1.0 → 2.0 over-install | No 1.0 artifact on this host and no attached device | Execute §15 U1–U5 on a device holding real 1.0 progress |
+| 1.0 → 2.0 over-install | No archived 1.0 artifact or 1.0 save exists on this host and no device is attached, so §15 U1–U5 is currently a one-shot test that cannot be repeated | Build and archive the 1.0 baseline APK from `d3ec282` (the last commit before V2-0) release-signed with the same key, plus a captured `save.current` payload (schema v3) from a played 1.0 session; then execute U1–U5 on a device |
 | iOS archive / TestFlight | No Apple account or team on this host, so there is no archive and no `flutter build ipa`; the simulator build only proves it compiles | Export from Xcode with the team's distribution certificate, then `flutter build ipa` |
 | Store upload | Nothing has been uploaded; the Android binaries are signed but unpublished | Upload the AAB to Play Console (closed testing first) and the archive to TestFlight |
 | Region 3 eyes-on play | The campaign unlocks in order, so the emulator pass never reached `hollow_01`–`hollow_05` (§V2-1 "Remaining manual step") | Play the five new levels once in landscape on a device |
@@ -242,10 +243,11 @@ outside the repo** — losing them means this listing can never be updated again
 |---|---|
 | `dart format` clean, `flutter analyze` clean, full suite green | **Met** (0 changed · no issues · 565 passing) |
 | `offline_guard_test` green; release manifest declares no permissions | **Met** |
-| Save upgrade verified on a device (1.0 → 2.0, damaged save recovers) | **Not met** — automated halves pass; the over-install needs a device |
+| Save upgrade verified on a device (1.0 → 2.0, damaged save recovers) | **Not met** — automated halves pass; the over-install needs an archived 1.0 build/save and a device |
+| Tagged release commit (V2_PLAN §10.7) | **Not met** — the repo has no git tags; `v2.0.0` must point at the commit the store artifacts are built from |
 | No known blocker, data-loss defect or resource leak | **Met for gameplay.** The open items are the distribution gate and two unmeasured environmental areas (audio audibility, GPU pacing) |
 | Store assets describe the build that actually ships | **Met** — `STORE_LISTING.md` rewritten for fifteen levels / five towers / six enemies / goals, difficulties, daily and achievements, with a v2 age-rating re-check and 2.0.0 release notes |
 | Release APK and iOS archive path built | **Met for Android** — release APK (56.2 MB) and AAB (54.4 MB), both verified against the release cert. **Open for iOS** — simulator app only, no archive/export |
 
-V2-6 remains **in progress** until the three device/store gates in §6 close. No
-gameplay, content or balance work is outstanding.
+V2-6 remains **in progress** until the gates in §6 close. No gameplay,
+content or balance work is outstanding.

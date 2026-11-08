@@ -51,7 +51,9 @@ all 15 levels on Normal and on Hard with both columns pinned; and
 both succeed. The APK and the AAB are **release-signed** (`CN=UpTowerDefense`, verified with
 `apksigner verify --print-certs`), so the Android upload artifact exists; what
 remains is the Play/TestFlight upload itself, an iOS archive/export (needs an
-Apple team), the 1.0 → 2.0 over-install and the hardware pass;
+Apple team), the 1.0 → 2.0 over-install (which first needs the 1.0 baseline
+APK from `d3ec282` and a sample save archived — see the per-release
+checklist), the release tag V2_PLAN §10.7 requires, and the hardware pass;
 the evidence for everything else is in
 [`V2_RELEASE_REPORT.md`](V2_RELEASE_REPORT.md).
 
@@ -90,6 +92,13 @@ overwritten and must not be committed as sources of truth.
 
 - [ ] Bump `version:` in `pubspec.yaml` (`MAJOR.MINOR.PATCH+BUILD`);
       it drives `versionCode`/`versionName` and `CFBundleVersion`
+- [ ] Tag the release commit (`git tag vX.Y.Z` on the exact commit the
+      artifacts are built from) — V2_PLAN §10.7 makes the tagged commit the
+      release's source of truth; the repo currently has no tags
+- [ ] Archive the previous release's installable APK plus a `save.current`
+      payload captured from a played session, so the over-install check
+      below can be repeated for every release (for 2.0 that means the 1.0
+      baseline from `d3ec282`, schema v3)
 - [ ] Release notes written for the version
 - [ ] [`STORE_LISTING.md`](STORE_LISTING.md) still describes the build
       (screenshots match the shipped UI)
@@ -112,10 +121,11 @@ overwritten and must not be committed as sources of truth.
 - [ ] `apksigner verify --print-certs` shows the **release** cert
 - [ ] `flutter build appbundle --release` (Play upload artifact)
 - [ ] `flutter build ipa --release` / archive (macOS + Apple account required)
-- [ ] Upgrade path: install the **previous** release, play and win a level,
-      install the new build *over it* — progress, unlocks and settings
-      survive. The automated half is `save_repository_test` (v1 → current
-      schema) and `save_relaunch_test`; the on-device half is this step.
+- [ ] Upgrade path: install the **previous** release (from the archive above),
+      play and win a level, install the new build *over it* — progress,
+      unlocks and settings survive. The automated half is
+      `save_repository_test` (v1 → current schema) and `save_relaunch_test`;
+      the on-device half is this step.
 
 ### Sign-off
 
