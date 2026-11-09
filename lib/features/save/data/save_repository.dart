@@ -60,6 +60,15 @@ class SaveRepository {
   SaveDocument _document = const SaveDocument.empty();
   Future<void> _writes = Future<void>.value();
 
+  /// Why the most recent write failed, or null while writes succeed.
+  ///
+  /// A failed write is still never thrown — the session keeps playing with
+  /// the values in memory — but it is no longer invisible either: the menu
+  /// and Settings show it through the save write-status provider until a write
+  /// lands, because silent progress loss is the one failure this app cannot
+  /// afford to hide (D82).
+  final ValueNotifier<String?> writeProblem = ValueNotifier<String?>(null);
+
   /// The latest known document, available synchronously for the UI.
   SaveDocument get document => _document;
 
@@ -165,11 +174,15 @@ class SaveRepository {
   }
 
   /// A failed write is logged, never thrown: a full disk or a locked store must
-  /// keep the session running with the values already in memory.
+  /// keep the session running with the values already in memory. The reason is
+  /// published on [writeProblem] so the status line can say progress is not
+  /// being stored, and cleared by the next write that lands.
   Future<void> _storeWrite(String payload) async {
     try {
       await store.write(payload);
+      writeProblem.value = null;
     } on Object catch (error) {
+      writeProblem.value = 'local storage refused the write ($error)';
       debugPrint('Failed to write the save: $error');
     }
   }

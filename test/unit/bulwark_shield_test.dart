@@ -9,7 +9,7 @@ import 'package:up_tower_defense/features/gameplay/domain/models/wave_definition
 import '../helpers/content_fixtures.dart';
 import '../helpers/map_fixture.dart';
 
-/// The bulwark's flat per-hit reduction (D80), exercised through the real
+/// The bulwark's flat per-hit reduction (D73), exercised through the real
 /// combat path: a shielded target, a ranger whose 18-damage hit lands as 12,
 /// and a frost whose 4-damage hit the shield eats whole.
 ///

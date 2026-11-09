@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:up_tower_defense/features/save/application/save_providers.dart';
 import 'package:up_tower_defense/features/save/data/save_repository.dart';
 
-/// The outcome of the last save load, as one line of player-facing text.
+/// The outcome of the last save load and of any failed write, as one line of
+/// player-facing text.
 ///
-/// A normal launch says where progress lives; a load that had to fall back says
-/// exactly what was preserved instead. The menu and the settings screen share
+/// A normal launch says where progress lives; a load that had to fall back —
+/// or a write the disk refused — says exactly what happened instead. The menu
+/// and the settings screen share
 /// this widget so the two can never describe the same load differently, and
 /// both watch the provider rather than a copy of it.
 class SaveStatusMessage extends ConsumerWidget {
@@ -23,14 +25,20 @@ class SaveStatusMessage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(saveStatusProvider);
+    final writeProblem = ref.watch(saveWriteStatusProvider);
     final theme = Theme.of(context);
-    final healthy = status.problem == null;
+    // A write failure is the more current fact: the load may have been
+    // healthy at bootstrap while the disk filled since, so it wins the line.
+    final effective = writeProblem == null
+        ? status
+        : SaveLoadReport(origin: SaveOrigin.current, problem: writeProblem);
+    final healthy = effective.problem == null;
     if (onlyWhenDegraded && healthy) {
       return const SizedBox.shrink();
     }
 
     return Text(
-      messageFor(status),
+      messageFor(effective),
       textAlign: TextAlign.center,
       style: theme.textTheme.bodySmall?.copyWith(
         color: healthy

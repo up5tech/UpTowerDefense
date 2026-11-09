@@ -27,3 +27,23 @@ final Provider<SaveDocument> initialSaveProvider = Provider<SaveDocument>(
 final Provider<SaveLoadReport> saveStatusProvider = Provider<SaveLoadReport>(
   (ref) => const SaveLoadReport.fresh(),
 );
+
+/// Why the most recent save write failed, or null while writes succeed.
+///
+/// The load report is a snapshot taken at bootstrap, but a write can only
+/// fail later — a full disk mid-session — so this mirrors the repository's
+/// notifier into provider state for the same degraded-status line (D82).
+final NotifierProvider<SaveWriteStatus, String?> saveWriteStatusProvider =
+    NotifierProvider<SaveWriteStatus, String?>(SaveWriteStatus.new);
+
+/// Mirrors [SaveRepository.writeProblem] so widgets can watch it.
+class SaveWriteStatus extends Notifier<String?> {
+  @override
+  String? build() {
+    final source = ref.watch(saveRepositoryProvider).writeProblem;
+    void listener() => state = source.value;
+    source.addListener(listener);
+    ref.onDispose(() => source.removeListener(listener));
+    return source.value;
+  }
+}

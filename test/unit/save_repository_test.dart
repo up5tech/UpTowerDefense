@@ -32,6 +32,31 @@ class _CountingStore implements SaveStore {
   Future<void> preserve(String payload) => inner.preserve(payload);
 }
 
+/// A store whose writes fail only while [failWrites] is set.
+class _FlakyStore implements SaveStore {
+  _FlakyStore(this.inner);
+
+  final SaveStore inner;
+  bool failWrites = false;
+
+  @override
+  Future<String?> readCurrent() => inner.readCurrent();
+
+  @override
+  Future<String?> readBackup() => inner.readBackup();
+
+  @override
+  Future<void> write(String payload) async {
+    if (failWrites) {
+      throw StateError('disk full');
+    }
+    await inner.write(payload);
+  }
+
+  @override
+  Future<void> preserve(String payload) => inner.preserve(payload);
+}
+
 /// A store that always fails to write, standing in for a full or locked disk.
 class _FailingStore implements SaveStore {
   @override
@@ -301,6 +326,24 @@ void main() {
     // The session keeps the value even though nothing reached storage.
     expect(repository.document.progress.resultFor('meadow_01'), isNotNull);
   });
+
+  test(
+    'a failed write is published, then cleared by the next success',
+    () async {
+      final store = _FlakyStore(InMemorySaveStore());
+      final repository = _repository(store);
+      await repository.load();
+      expect(repository.writeProblem.value, isNull);
+
+      store.failWrites = true;
+      await repository.saveProgress(_document().progress);
+      expect(repository.writeProblem.value, isNotNull);
+
+      store.failWrites = false;
+      await repository.saveSettings(GameSettings.defaults);
+      expect(repository.writeProblem.value, isNull);
+    },
+  );
 }
 
 /// A store whose reads throw, standing in for unavailable platform storage.

@@ -1,10 +1,9 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:up_tower_defense/app/app.dart';
 import 'package:up_tower_defense/core/constants/app_info.dart';
 import 'package:up_tower_defense/features/campaign/application/campaign_providers.dart';
 import 'package:up_tower_defense/features/campaign/domain/campaign_progress.dart';
+import 'package:up_tower_defense/features/save/data/in_memory_save_store.dart';
 import 'package:up_tower_defense/features/save/data/save_store.dart';
 
 import '../helpers/pump_app.dart';
@@ -13,10 +12,7 @@ void main() {
   testWidgets('shell boots into the main menu with its entry points', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      const ProviderScope(child: UpTowerDefenseApp()),
-    );
-    await tester.pumpAndSettle();
+    await pumpApp(tester);
 
     expect(find.text(AppInfo.name), findsOneWidget);
     expect(find.text(AppInfo.tagline), findsOneWidget);
@@ -79,4 +75,52 @@ void main() {
     expect(find.textContaining('Your save could not be read'), findsOneWidget);
     expect(find.text('Progress is saved on this device.'), findsNothing);
   });
+
+  testWidgets('the menu reports a save the disk refused', (tester) async {
+    final container = await pumpApp(
+      tester,
+      saveStore: _RefusingWritesStore(InMemorySaveStore()),
+    );
+
+    // A healthy load says nothing until a write actually fails.
+    expect(find.textContaining('Progress could not be saved'), findsNothing);
+
+    container
+        .read(campaignProgressProvider.notifier)
+        .record(
+          const LevelResult(
+            levelId: 'test_level',
+            stars: 3,
+            coreHealth: 10,
+            maxCoreHealth: 10,
+            wavesCleared: 2,
+            totalWaves: 2,
+          ),
+        );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.textContaining('Progress could not be saved'), findsOneWidget);
+  });
+}
+
+/// Reads whatever is stored but refuses every write — a full or locked disk.
+class _RefusingWritesStore implements SaveStore {
+  _RefusingWritesStore(this.inner);
+
+  final SaveStore inner;
+
+  @override
+  Future<String?> readCurrent() => inner.readCurrent();
+
+  @override
+  Future<String?> readBackup() => inner.readBackup();
+
+  @override
+  Future<void> write(String payload) async {
+    throw StateError('disk full');
+  }
+
+  @override
+  Future<void> preserve(String payload) => inner.preserve(payload);
 }

@@ -566,12 +566,10 @@ Already in `docs/GAME_DESIGN.md` §14 as planned v2 rows:
 - **D70** — a daily seed selects one existing campaign level deterministically;
   its authored content runs unchanged and records only a daily result (V2-3).
 
-Still to log at the phase that introduces them:
-
-- Haptics cue set and why it is cosmetic, not a rule.
-- Chain targeting order and falloff shape.
-- Splitter children and reward accounting under the single-resolution rule.
-- Save v4/v5 field sets and their defaults.
+All four have since landed: the haptics cue set as **D71**, the chain
+targeting order and falloff shape as **D72**, the shield/splitter rules of
+the resolution path as **D73** (their test coverage as **D80**), and the
+save v4/v5 field sets as **D74**/**D77**.
 
 ## 9. Resolved questions
 
