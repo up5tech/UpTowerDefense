@@ -12,9 +12,9 @@ import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart
 /// Hard-mode balance gate (D65).
 ///
 /// Hard is one load-time profile over wave counts and starting gold, so it has
-/// to be measured, not assumed: the probe runs the same four naive plans that
-/// pin Normal, on the same levels, and its numbers are pinned here. Two claims
-/// are checked:
+/// to be measured, not assumed: the probe runs the same naive plans that
+/// pin Normal, on the same levels, and its numbers are pinned here. Three
+/// claims are checked:
 ///
 /// 1. **Hard is harder.** Every pinned Hard row is at or below its Normal
 ///    counterpart on core health — the profile may not make a level easier by
@@ -22,6 +22,9 @@ import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart
 /// 2. **No level is unwinnable.** Each of the fifteen levels is won by at least
 ///    one plan. A mode where a level can only be lost is not difficulty, it is
 ///    a dead end (V2-3's exit gate).
+/// 3. **No level needs a single strategy.** PLAN Phase 11's diversity rule:
+///    the three Region 3 finales that once rested on `cannon crossfire` alone
+///    must each stay winnable under at least two plans.
 ///
 /// The policy mirrors `tool/balance_probe.dart` exactly, including the capped
 /// starter plan for the opening levels. When Hard's percentages change, re-run
@@ -119,6 +122,87 @@ const Map<String, Map<String, List<(String, String)>>> _probePlans = {
       ('pad_g', 'frost'),
     ],
   },
+  'arc slot': {
+    'meadow_gate': [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_b', 'arc'),
+      ('pad_e', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'ranger'),
+    ],
+    'ember_pass': [
+      ('pad_a', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_c', 'arc'),
+      ('pad_d', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'arc'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'ranger'),
+    ],
+  },
+  'beacon slot': {
+    'meadow_gate': [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'beacon'),
+    ],
+    'ember_pass': [
+      ('pad_a', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'beacon'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'beacon'),
+    ],
+  },
+  'cannon arc mix': {
+    'meadow_gate': [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'cannon'),
+      ('pad_e', 'cannon'),
+      ('pad_b', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'arc'),
+    ],
+    'ember_pass': [
+      ('pad_a', 'ranger'),
+      ('pad_b', 'cannon'),
+      ('pad_c', 'cannon'),
+      ('pad_d', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'arc'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'cannon'),
+      ('pad_e', 'cannon'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'arc'),
+      ('pad_g', 'ranger'),
+    ],
+  },
   'no-frost control': {
     'meadow_gate': [
       ('pad_a', 'ranger'),
@@ -150,18 +234,22 @@ const Map<String, Map<String, List<(String, String)>>> _probePlans = {
 
 /// Probe-measured Hard outcomes per strategy: `(victory, coreHealth, leaks)`.
 ///
-/// Measured 2026-11-04 with the profile at 125% wave counts and 90% starting
-/// gold, under the four full-build plans plus the capped opening plan. Nine
-/// rows lose — hollow_03, hollow_04 and hollow_05 under every plan but
-/// `cannon crossfire` — and they are pinned as losses on purpose: the probe's
-/// plans are naive (fill every pad with one tower), and Hard is where a player
-/// has to adapt. What must not happen is a level nobody can win, which the
-/// last test checks.
+/// Re-measured with the V2-2 roster plans (`arc slot`, `beacon slot`,
+/// `cannon arc mix`) under the same 125% wave counts and 90% starting gold.
+/// Fourteen rows lose — `hollow_03`, `hollow_04` and `hollow_05` under every
+/// single-tower plan but the damage mixes — and they are pinned as losses on
+/// purpose: the probe's plans are naive (fill every pad with one tower), and
+/// Hard is where a player has to adapt. What must not happen is a level
+/// nobody can win, or one only a single build order can win — the last two
+/// tests check both.
 const Map<String, Map<String, (bool, int, int)>> _pinnedHardOutcomes = {
   'meadow_01': {
     'rangers only': (true, 20, 0),
     'cannon crossfire': (true, 16, 4),
     'frost control': (true, 20, 0),
+    'arc slot': (true, 18, 2),
+    'beacon slot': (true, 20, 0),
+    'cannon arc mix': (true, 16, 4),
     'capped starter': (true, 20, 0),
     'no-frost control': (true, 20, 0),
   },
@@ -169,6 +257,9 @@ const Map<String, Map<String, (bool, int, int)>> _pinnedHardOutcomes = {
     'rangers only': (true, 19, 1),
     'cannon crossfire': (true, 15, 5),
     'frost control': (true, 19, 1),
+    'arc slot': (true, 19, 1),
+    'beacon slot': (true, 19, 1),
+    'cannon arc mix': (true, 15, 5),
     'capped starter': (true, 19, 1),
     'no-frost control': (true, 20, 0),
   },
@@ -176,6 +267,9 @@ const Map<String, Map<String, (bool, int, int)>> _pinnedHardOutcomes = {
     'rangers only': (true, 16, 2),
     'cannon crossfire': (true, 18, 0),
     'frost control': (true, 16, 2),
+    'arc slot': (true, 16, 2),
+    'beacon slot': (true, 16, 2),
+    'cannon arc mix': (true, 18, 0),
     'capped starter': (true, 16, 2),
     'no-frost control': (true, 18, 0),
   },
@@ -183,72 +277,108 @@ const Map<String, Map<String, (bool, int, int)>> _pinnedHardOutcomes = {
     'rangers only': (true, 18, 0),
     'cannon crossfire': (true, 18, 0),
     'frost control': (true, 18, 0),
+    'arc slot': (true, 16, 2),
+    'beacon slot': (true, 18, 0),
+    'cannon arc mix': (true, 18, 0),
     'no-frost control': (true, 18, 0),
   },
   'meadow_05': {
     'rangers only': (true, 14, 1),
     'cannon crossfire': (true, 14, 1),
     'frost control': (true, 14, 1),
+    'arc slot': (true, 13, 3),
+    'beacon slot': (true, 16, 0),
+    'cannon arc mix': (true, 14, 1),
     'no-frost control': (true, 16, 0),
   },
   'ember_01': {
     'rangers only': (true, 16, 0),
     'cannon crossfire': (true, 16, 0),
     'frost control': (true, 16, 0),
+    'arc slot': (true, 13, 3),
+    'beacon slot': (true, 16, 0),
+    'cannon arc mix': (true, 16, 0),
     'no-frost control': (true, 16, 0),
   },
   'ember_02': {
     'rangers only': (true, 15, 0),
     'cannon crossfire': (true, 14, 1),
     'frost control': (true, 15, 0),
+    'arc slot': (true, 15, 0),
+    'beacon slot': (true, 15, 0),
+    'cannon arc mix': (true, 14, 1),
     'no-frost control': (true, 15, 0),
   },
   'ember_03': {
     'rangers only': (true, 9, 3),
     'cannon crossfire': (true, 7, 4),
     'frost control': (true, 9, 3),
+    'arc slot': (true, 11, 2),
+    'beacon slot': (true, 7, 4),
+    'cannon arc mix': (true, 7, 4),
     'no-frost control': (true, 11, 2),
   },
   'ember_04': {
     'rangers only': (true, 4, 4),
     'cannon crossfire': (true, 12, 0),
     'frost control': (true, 2, 5),
+    'arc slot': (true, 8, 2),
+    'beacon slot': (false, 0, 6),
+    'cannon arc mix': (true, 12, 0),
     'no-frost control': (true, 6, 3),
   },
   'ember_05': {
     'rangers only': (true, 8, 2),
     'cannon crossfire': (true, 12, 0),
     'frost control': (true, 12, 0),
+    'arc slot': (true, 10, 1),
+    'beacon slot': (true, 8, 2),
+    'cannon arc mix': (true, 12, 0),
     'no-frost control': (true, 8, 2),
   },
   'hollow_01': {
     'rangers only': (true, 14, 3),
     'cannon crossfire': (true, 20, 0),
     'frost control': (true, 14, 3),
+    'arc slot': (true, 20, 0),
+    'beacon slot': (true, 12, 4),
+    'cannon arc mix': (true, 20, 0),
     'no-frost control': (true, 14, 3),
   },
   'hollow_02': {
     'rangers only': (true, 14, 3),
     'cannon crossfire': (true, 20, 0),
     'frost control': (true, 14, 3),
+    'arc slot': (true, 20, 0),
+    'beacon slot': (true, 12, 4),
+    'cannon arc mix': (true, 20, 0),
     'no-frost control': (true, 13, 4),
   },
   'hollow_03': {
     'rangers only': (false, 0, 18),
     'cannon crossfire': (true, 20, 0),
     'frost control': (false, 0, 18),
+    'arc slot': (true, 20, 0),
+    'beacon slot': (false, 0, 18),
+    'cannon arc mix': (true, 20, 0),
     'no-frost control': (false, 0, 19),
   },
   'hollow_04': {
     'rangers only': (false, 0, 20),
     'cannon crossfire': (true, 20, 0),
     'frost control': (false, 0, 20),
+    'arc slot': (true, 16, 4),
+    'beacon slot': (false, 0, 20),
+    'cannon arc mix': (true, 20, 0),
     'no-frost control': (false, 0, 20),
   },
   'hollow_05': {
     'rangers only': (false, 0, 7),
     'cannon crossfire': (true, 14, 0),
     'frost control': (false, 0, 7),
+    'arc slot': (false, 0, 8),
+    'beacon slot': (false, 0, 7),
+    'cannon arc mix': (true, 14, 0),
     'no-frost control': (false, 0, 7),
   },
 };
@@ -432,6 +562,38 @@ void main() {
         reason:
             '$levelId leaves more core on Hard ($bestHardCore) than on Normal '
             '($bestNormalCore): the profile is making the level easier.',
+      );
+    }
+  });
+
+  test('the Region 3 finales are winnable by more than one plan', () async {
+    // PLAN Phase 11's diversity rule: a level that only one build order can
+    // win is a single-strategy level wearing a difficulty label. These three
+    // were `cannon crossfire`-only until the V2-2 roster plans were added;
+    // the pin keeps a future data edit from collapsing them back.
+    for (final levelId in const ['hollow_03', 'hollow_04', 'hollow_05']) {
+      final bundle = await load(levelId);
+      final winners = <String>[];
+
+      for (final strategy in _pinnedHardOutcomes[levelId]!.entries) {
+        final outcome = _run(
+          bundle,
+          _plan(strategy.key, levelId, bundle.map.id),
+        );
+        if (outcome.victory) {
+          winners.add(strategy.key);
+        }
+      }
+
+      expect(
+        winners.length,
+        greaterThanOrEqualTo(2),
+        reason:
+            '$levelId on Hard is won by ${winners.length} plan(s) '
+            '(${winners.join(', ')}). Re-run '
+            '`dart run tool/balance_probe.dart --difficulty=hard`; if the '
+            'mix plans stopped working, the level drifted back to requiring '
+            'a single strategy.',
       );
     }
   });

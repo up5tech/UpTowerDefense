@@ -41,6 +41,19 @@ re-run Normal probe after that change — every level still wins under every
 plan, with `hollow_03`–`hollow_05` closer to the edge — and the §3 Hard table
 is unchanged value for value, including its nine pinned losses.
 
+**Amended 2026-11-09 — the probe measures arc and beacon at last.** V2-2's
+same-slot control criterion was asserted but never measured: the probe only
+built ranger/cannon/frost plans. Three order-matched plans close the gap —
+`arc slot` and `beacon slot` (one slot swapped against `rangers only`) and
+`cannon arc mix` (one slot swapped against `cannon crossfire`). Normal: arc
+beats its control on seven levels and loses on two; beacon wins only
+`meadow_05` and loses six — the weakest slot in the roster, now pinned.
+Hard: pinned losses grow from nine rows to fourteen, but `hollow_03`–`hollow_05`
+are no longer `cannon crossfire`-only — `arc slot` also wins the first two and
+`cannon arc mix` wins all three, so no level requires a single strategy. The
+§2/§3 tables above are the pre-amendment runs; the current pins live in the
+two `balance_*_regression_test.dart` files (D81).
+
 ## 2. Outcome table — Normal
 
 `DifficultyProfile(normal, waves 100%, gold 100%)`, naive fill-then-upgrade

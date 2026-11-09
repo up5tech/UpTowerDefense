@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:up_tower_defense/features/campaign/data/campaign_repository.dart';
 import 'package:up_tower_defense/features/campaign/domain/level_rating.dart';
 import 'package:up_tower_defense/features/gameplay/data/content_catalog.dart';
 import 'package:up_tower_defense/features/gameplay/data/difficulty_repository.dart';
@@ -26,9 +27,9 @@ import 'package:up_tower_defense/features/gameplay/domain/models/difficulty.dart
 ///    13 core, so a plan judged against a differently-ordered control measures
 ///    the order, not the tower — the structural check below keeps that trap
 ///    from reopening.
-/// 3. **Campaign outcomes.** The seven levels after the opening are pinned to
+/// 3. **Campaign outcomes.** The levels after the opening are pinned to
 ///    exactly what the probe measures today — win or loss, core left and leaks
-///    — under each of its four strategies. Balance edits are supposed to move
+///    — under each of its strategies. Balance edits are supposed to move
 ///    these numbers; the point is that they cannot move *silently*.
 ///
 /// The policy mirrors the probe deliberately: this file is the gate, that one
@@ -42,7 +43,7 @@ const double _dt = 1 / 60;
 /// of minutes of simulation, so a run still going at this point is stuck.
 const double _timeLimit = 900;
 
-/// The probe's four strategies, copied from `tool/balance_probe.dart` —
+/// The probe's strategies, copied from `tool/balance_probe.dart` —
 /// same plans, same pad order, same fill-then-upgrade policy. Keep the two in
 /// sync: a plan edited here but not there (or vice versa) breaks the promise
 /// that the gate and the probe measure the same thing.
@@ -138,6 +139,87 @@ const Map<String, Map<String, List<(String, String)>>> _probePlans = {
       ('pad_g', 'frost'),
     ],
   },
+  'arc slot': {
+    'meadow_gate': [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_b', 'arc'),
+      ('pad_e', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'ranger'),
+    ],
+    'ember_pass': [
+      ('pad_a', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_c', 'arc'),
+      ('pad_d', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'arc'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'ranger'),
+    ],
+  },
+  'beacon slot': {
+    'meadow_gate': [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'beacon'),
+    ],
+    'ember_pass': [
+      ('pad_a', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'beacon'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'beacon'),
+    ],
+  },
+  'cannon arc mix': {
+    'meadow_gate': [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'cannon'),
+      ('pad_e', 'cannon'),
+      ('pad_b', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'arc'),
+    ],
+    'ember_pass': [
+      ('pad_a', 'ranger'),
+      ('pad_b', 'cannon'),
+      ('pad_c', 'cannon'),
+      ('pad_d', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'arc'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'cannon'),
+      ('pad_e', 'cannon'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'arc'),
+      ('pad_g', 'ranger'),
+    ],
+  },
   'no-frost control': {
     'meadow_gate': [
       ('pad_a', 'ranger'),
@@ -199,77 +281,122 @@ List<(String, String)> _plan(
 /// roster fix (D79) then put bulwark and splitter spawns into `hollow_03`–
 /// `hollow_05`, which is why those three rows sit closer to the edge than the
 /// rest of the table.
+///
+/// The V2-2 roster audit added the three plans that were missing: `arc slot`
+/// and `beacon slot` give each new tower a same-slot control against
+/// `rangers only` (V2_PLAN §10's "every tower beats an order-matched control
+/// somewhere"), and `cannon arc mix` is the mixed plan that keeps Hard's
+/// `hollow_03`–`hollow_05` from resting on `cannon crossfire` alone. Arc beats
+/// its control on seven levels and loses on two; Beacon wins only meadow_05
+/// and loses six — the weakest slot in the roster, which is exactly what the
+/// pin is for.
 const Map<String, Map<String, (bool, int, int)>> _pinnedOutcomes = {
   'meadow_04': {
     'rangers only': (true, 18, 0),
     'cannon crossfire': (true, 18, 0),
     'frost control': (true, 18, 0),
+    'arc slot': (true, 17, 1),
+    'beacon slot': (true, 18, 0),
+    'cannon arc mix': (true, 18, 0),
     'no-frost control': (true, 18, 0),
   },
   'meadow_05': {
     'rangers only': (true, 14, 1),
     'cannon crossfire': (true, 16, 0),
     'frost control': (true, 14, 1),
+    'arc slot': (true, 16, 0),
+    'beacon slot': (true, 16, 0),
+    'cannon arc mix': (true, 16, 0),
     'no-frost control': (true, 16, 0),
   },
   'ember_01': {
     'rangers only': (true, 16, 0),
     'cannon crossfire': (true, 16, 0),
     'frost control': (true, 16, 0),
+    'arc slot': (true, 16, 0),
+    'beacon slot': (true, 16, 0),
+    'cannon arc mix': (true, 16, 0),
     'no-frost control': (true, 16, 0),
   },
   'ember_02': {
     'rangers only': (true, 15, 0),
     'cannon crossfire': (true, 14, 1),
     'frost control': (true, 15, 0),
+    'arc slot': (true, 15, 0),
+    'beacon slot': (true, 15, 0),
+    'cannon arc mix': (true, 14, 1),
     'no-frost control': (true, 15, 0),
   },
   'ember_03': {
     'rangers only': (true, 9, 3),
     'cannon crossfire': (true, 13, 1),
     'frost control': (true, 9, 3),
+    'arc slot': (true, 13, 1),
+    'beacon slot': (true, 9, 3),
+    'cannon arc mix': (true, 13, 1),
     'no-frost control': (true, 13, 1),
   },
   'ember_04': {
     'rangers only': (true, 6, 3),
     'cannon crossfire': (true, 12, 0),
     'frost control': (true, 2, 5),
+    'arc slot': (true, 8, 2),
+    'beacon slot': (true, 2, 5),
+    'cannon arc mix': (true, 12, 0),
     'no-frost control': (true, 10, 1),
   },
   'ember_05': {
     'rangers only': (true, 10, 1),
     'cannon crossfire': (true, 12, 0),
     'frost control': (true, 12, 0),
+    'arc slot': (true, 10, 1),
+    'beacon slot': (true, 8, 2),
+    'cannon arc mix': (true, 12, 0),
     'no-frost control': (true, 10, 1),
   },
   'hollow_01': {
     'rangers only': (true, 18, 1),
     'cannon crossfire': (true, 20, 0),
     'frost control': (true, 18, 1),
+    'arc slot': (true, 20, 0),
+    'beacon slot': (true, 16, 2),
+    'cannon arc mix': (true, 20, 0),
     'no-frost control': (true, 18, 1),
   },
   'hollow_02': {
     'rangers only': (true, 16, 2),
     'cannon crossfire': (true, 20, 0),
     'frost control': (true, 18, 1),
+    'arc slot': (true, 20, 0),
+    'beacon slot': (true, 16, 2),
+    'cannon arc mix': (true, 20, 0),
     'no-frost control': (true, 16, 2),
   },
   'hollow_03': {
     'rangers only': (true, 3, 12),
     'cannon crossfire': (true, 20, 0),
     'frost control': (true, 7, 10),
+    'arc slot': (true, 20, 0),
+    'beacon slot': (false, 0, 14),
+    'cannon arc mix': (true, 20, 0),
     'no-frost control': (true, 18, 1),
   },
   'hollow_04': {
     'rangers only': (true, 15, 5),
     'cannon crossfire': (true, 20, 0),
     'frost control': (true, 17, 3),
+    'arc slot': (true, 15, 5),
+    'beacon slot': (true, 8, 9),
+    'cannon arc mix': (true, 20, 0),
     'no-frost control': (true, 1, 17),
   },
   'hollow_05': {
     'rangers only': (true, 2, 6),
     'cannon crossfire': (true, 14, 0),
     'frost control': (true, 2, 6),
+    'arc slot': (true, 6, 4),
+    'beacon slot': (false, 0, 7),
+    'cannon arc mix': (true, 14, 0),
     'no-frost control': (true, 4, 5),
   },
 };
@@ -290,6 +417,19 @@ class _Outcome {
   final int objectivesMet;
   final int objectiveCount;
   final int stars;
+}
+
+/// Orders two runs the way the pinned table reads a row: victory first, then
+/// core health left, then fewer leaks. Negative when [a] is better, positive
+/// when [b] is, zero on a tie.
+int _compareOutcomes(_Outcome a, _Outcome b) {
+  if (a.victory != b.victory) {
+    return a.victory ? -1 : 1;
+  }
+  if (a.coreHealth != b.coreHealth) {
+    return b.coreHealth - a.coreHealth;
+  }
+  return a.leaks - b.leaks;
 }
 
 /// Runs one attempt under a fixed plan, the way the probe does.
@@ -367,6 +507,7 @@ void main() {
 
   late final LevelRepository repository;
   late final Map<Difficulty, DifficultyProfile> profiles;
+  late final List<String> levelIds;
 
   setUpAll(() async {
     repository = LevelRepository(
@@ -375,6 +516,8 @@ void main() {
       towerRepository: TowerRepository(),
     );
     profiles = await DifficultyRepository().load();
+    levelIds = (await CampaignRepository().load(ContentCatalog.campaign))
+        .levelIds;
   });
 
   Future<LevelBundle> load(
@@ -462,64 +605,127 @@ void main() {
 
   group('order-matched control', () {
     test(
-      'each control builds the same pads as its support plan, in order',
+      'each control builds the same pads as its plan, in order',
       () async {
+        // (control, plan) pairs: every same-slot comparison the probe makes,
+        // on one level per map. `rangers only` controls the single-swap plans;
+        // `cannon crossfire` controls the mix, which differs from it by one
+        // slot only.
         const comparisons = [
+          ('rangers only', 'frost control'),
+          ('rangers only', 'arc slot'),
+          ('rangers only', 'beacon slot'),
+          ('cannon crossfire', 'cannon arc mix'),
+        ];
+        const levels = [
           ('meadow_01', 'meadow_gate'),
           ('ember_01', 'ember_pass'),
           ('hollow_01', 'hollow_court'),
         ];
 
-        for (final (levelId, mapId) in comparisons) {
-          final control = _plan('rangers only', levelId, mapId);
-          final support = _plan('frost control', levelId, mapId);
-          final bundle = await load(levelId);
+        for (final (controlName, planName) in comparisons) {
+          for (final (levelId, mapId) in levels) {
+            final control = _plan(controlName, levelId, mapId);
+            final support = _plan(planName, levelId, mapId);
+            final bundle = await load(levelId);
+            final where = '$levelId / $controlName vs $planName';
 
-          expect(
-            [for (final (padId, _) in support) padId],
-            [for (final (padId, _) in control) padId],
-            reason:
-                '$levelId: a control that builds different pads, or in a '
-                'different order, measures the order instead of the tower',
-          );
-
-          // Every shipped pad exactly once, so the comparison covers the whole
-          // build space rather than quietly skipping a slot.
-          final controlPads = [for (final (padId, _) in control) padId];
-          expect(
-            controlPads.toSet(),
-            {for (final pad in bundle.map.buildPads) pad.id},
-            reason:
-                '$levelId: the plans must fill every pad of ${bundle.map.id}',
-          );
-          expect(
-            controlPads.toSet(),
-            hasLength(controlPads.length),
-            reason: '$levelId: a pad appears twice in the plan',
-          );
-
-          // The plans differ only by swapping a damage slot for a support slot.
-          final swapped = [
-            for (var i = 0; i < control.length; i++)
-              if (control[i].$2 != support[i].$2) i,
-          ];
-          expect(swapped, isNotEmpty, reason: '$levelId: nothing is compared');
-          for (final i in swapped) {
-            expect(control[i].$2, 'ranger', reason: '$levelId slot $i');
-            expect(support[i].$2, isNot('ranger'), reason: '$levelId slot $i');
-          }
-
-          // Both plans only use towers the shipped catalog offers.
-          for (final (_, towerId) in [...control, ...support]) {
             expect(
-              bundle.towers.contains(towerId),
-              isTrue,
-              reason: '$levelId references unknown tower "$towerId"',
+              [for (final (padId, _) in support) padId],
+              [for (final (padId, _) in control) padId],
+              reason:
+                  '$where: a control that builds different pads, or in a '
+                  'different order, measures the order instead of the tower',
             );
+
+            // Every shipped pad exactly once, so the comparison covers the
+            // whole build space rather than quietly skipping a slot.
+            final controlPads = [for (final (padId, _) in control) padId];
+            expect(
+              controlPads.toSet(),
+              {for (final pad in bundle.map.buildPads) pad.id},
+              reason:
+                  '$where: the plans must fill every pad of ${bundle.map.id}',
+            );
+            expect(
+              controlPads.toSet(),
+              hasLength(controlPads.length),
+              reason: '$where: a pad appears twice in the plan',
+            );
+
+            // The plans differ only by swapping a damage slot for another
+            // tower.
+            final swapped = [
+              for (var i = 0; i < control.length; i++)
+                if (control[i].$2 != support[i].$2) i,
+            ];
+            expect(swapped, isNotEmpty, reason: '$where: nothing is compared');
+            for (final i in swapped) {
+              expect(control[i].$2, 'ranger', reason: '$where slot $i');
+              expect(support[i].$2, isNot('ranger'), reason: '$where slot $i');
+            }
+
+            // Both plans only use towers the shipped catalog offers.
+            for (final (_, towerId) in [...control, ...support]) {
+              expect(
+                bundle.towers.contains(towerId),
+                isTrue,
+                reason: '$where references unknown tower "$towerId"',
+              );
+            }
           }
         }
       },
     );
+  });
+
+  group('new tower coverage', () {
+    // V2_PLAN's definition of done: every tower beats an order-matched
+    // control somewhere and never loses everywhere. `arc slot` and
+    // `beacon slot` are the V2-2 towers' same-slot plans against
+    // `rangers only`, measured on every campaign level — not only the pinned
+    // ones — so a tower that wins one niche cannot hide behind the table.
+    for (final planName in const ['arc slot', 'beacon slot']) {
+      test(
+        '$planName beats its control somewhere, loses nowhere always',
+        () async {
+          final wins = <String>[];
+          final losses = <String>[];
+
+          for (final levelId in levelIds) {
+            final bundle = await load(levelId);
+            final control = _run(
+              bundle,
+              _plan('rangers only', levelId, bundle.map.id),
+            );
+            final plan = _run(bundle, _plan(planName, levelId, bundle.map.id));
+            final comparison = _compareOutcomes(plan, control);
+            if (comparison < 0) {
+              wins.add(levelId);
+            } else if (comparison > 0) {
+              losses.add(levelId);
+            }
+          }
+
+          expect(
+            wins,
+            isNotEmpty,
+            reason:
+                '$planName never beats `rangers only` on any level. V2_PLAN '
+                'requires every tower to win somewhere; re-run '
+                '`dart run tool/balance_probe.dart` and report the structural '
+                'cause before tuning numbers (D54/D56 precedent).',
+          );
+          expect(
+            losses.length,
+            lessThan(levelIds.length),
+            reason:
+                '$planName loses to `rangers only` on every level — it has no '
+                'situation in the campaign at all.',
+          );
+        },
+      );
+    }
   });
 
   group('pinned campaign outcomes', () {

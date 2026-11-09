@@ -145,6 +145,100 @@ const Map<String, Map<String, List<(String, String)>>> _strategies = {
       ('pad_g', 'frost'),
     ],
   },
+  // Arc is a damage tower, so it takes an early slot — third build, where a
+  // player mixing damage types would place it — while every other slot stays
+  // a ranger in `rangers only`' order. That plan is its order-matched control:
+  // same pads, same order, one slot swapped (the D55 method).
+  'arc slot': {
+    'meadow_gate': [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_b', 'arc'),
+      ('pad_e', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'ranger'),
+    ],
+    'ember_pass': [
+      ('pad_a', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_c', 'arc'),
+      ('pad_d', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'arc'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'ranger'),
+    ],
+  },
+  // Beacon is a support tower, so it is built last like the frost — its aura
+  // buffs towers that are already placed — on the same pad order as
+  // `rangers only`, which is again its order-matched control.
+  'beacon slot': {
+    'meadow_gate': [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'beacon'),
+    ],
+    'ember_pass': [
+      ('pad_a', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'beacon'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'ranger'),
+      ('pad_g', 'beacon'),
+    ],
+  },
+  // A mixed damage plan: `cannon crossfire`'s pads and order with one ranger
+  // slot swapped for arc, so the splash and the chain share the wave. Its
+  // order-matched control is `cannon crossfire` itself — same pads, same
+  // order, one slot swapped. It exists because Hard's `hollow_05` was won by
+  // `cannon crossfire` alone, and PLAN's Phase 11 rule is that no level may
+  // require a single strategy.
+  'cannon arc mix': {
+    'meadow_gate': [
+      ('pad_a', 'ranger'),
+      ('pad_c', 'cannon'),
+      ('pad_e', 'cannon'),
+      ('pad_b', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_f', 'arc'),
+    ],
+    'ember_pass': [
+      ('pad_a', 'ranger'),
+      ('pad_b', 'cannon'),
+      ('pad_c', 'cannon'),
+      ('pad_d', 'ranger'),
+      ('pad_e', 'ranger'),
+      ('pad_f', 'arc'),
+    ],
+    'hollow_court': [
+      ('pad_a', 'ranger'),
+      ('pad_d', 'ranger'),
+      ('pad_c', 'cannon'),
+      ('pad_e', 'cannon'),
+      ('pad_f', 'ranger'),
+      ('pad_b', 'arc'),
+      ('pad_g', 'ranger'),
+    ],
+  },
   // A deliberately under-built plan for the opening levels, which are the ones
   // whose goals a player meets first. Two pads only, so it satisfies a
   // `maxTowers` goal of 2 or 3 — the cap is an upper bound, not a target — and
